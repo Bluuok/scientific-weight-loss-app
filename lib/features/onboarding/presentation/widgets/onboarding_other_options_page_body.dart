@@ -35,8 +35,10 @@ class OnboardingOtherOptionsPageBody extends StatefulWidget {
     bool dailyReminderEnabled,
     bool useMaterialYou,
     int? accentColor,
-  ) setPageContent;
+  )
+  setPageContent;
 
+  final bool focused;
   final AppThemeEntity initialTheme;
   final Map<String, bool> initialFoodSourceToggles;
   final bool initialDailyReminderEnabled;
@@ -62,6 +64,7 @@ class OnboardingOtherOptionsPageBody extends StatefulWidget {
     required this.initialDailyReminderEnabled,
     required this.initialUseMaterialYou,
     required this.initialAccentColor,
+    this.focused = false,
     this.aiCredentials,
     this.aiProbeRunner,
   });
@@ -74,8 +77,9 @@ class OnboardingOtherOptionsPageBody extends StatefulWidget {
 class _OnboardingOtherOptionsPageBodyState
     extends State<OnboardingOtherOptionsPageBody> {
   late AppThemeEntity _selectedTheme = widget.initialTheme;
-  late final Map<String, bool> _foodSourceToggles =
-      Map<String, bool>.from(widget.initialFoodSourceToggles);
+  late final Map<String, bool> _foodSourceToggles = Map<String, bool>.from(
+    widget.initialFoodSourceToggles,
+  );
   late bool _dailyReminderEnabled = widget.initialDailyReminderEnabled;
   late bool _useMaterialYou = widget.initialUseMaterialYou;
   late int? _accentColor = widget.initialAccentColor;
@@ -86,6 +90,7 @@ class _OnboardingOtherOptionsPageBodyState
   bool? _aiConfigured;
   String? _aiEndpoint;
   bool _aiEnabled = false;
+
   /// Null when the stored name is unrecognised — see #753.
   AiProvider? _aiProvider;
 
@@ -204,8 +209,8 @@ class _OnboardingOtherOptionsPageBodyState
               child: _swatch(
                 context,
                 color: color,
-                selected: !materialYouSelected &&
-                    _accentColor == color.toARGB32(),
+                selected:
+                    !materialYouSelected && _accentColor == color.toARGB32(),
                 onTap: () => _onAccentColorSelected(color),
               ),
             ),
@@ -236,9 +241,7 @@ class _OnboardingOtherOptionsPageBodyState
                   color: Theme.of(context).colorScheme.onSurface,
                   width: 3,
                 )
-              : Border.all(
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                ),
+              : Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         ),
         child: selected && child == null
             ? const Icon(Icons.check_rounded, color: Colors.white)
@@ -261,6 +264,37 @@ class _OnboardingOtherOptionsPageBodyState
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
+    if (widget.focused) {
+      return SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '设置好了，接下来这样用',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '1. 在“我的计划”选择饮食偏好，再生成7天餐单。\n\n2. 每天打开“今天吃什么”，按餐查看食材和做法。\n\n3. 吃完后记录；吃得不一样也可以照实填写。',
+            ),
+            const SizedBox(height: 16),
+            Semantics(
+              identifier: 'onboarding-daily-reminder',
+              child: SwitchListTile(
+                title: const Text('每天提醒记录'),
+                subtitle: const Text('可选，之后可以修改'),
+                value: _dailyReminderEnabled,
+                onChanged: (value) {
+                  setState(() => _dailyReminderEnabled = value);
+                  _publish();
+                },
+              ),
+            ),
+            const Text('服务配置由家人协助。现在不需要填写地址、模型或密钥。'),
+          ],
+        ),
+      );
+    }
     return SingleChildScrollView(
       child: SizedBox(
         width: double.infinity,
@@ -428,7 +462,8 @@ class _OnboardingOtherOptionsPageBodyState
           ),
           for (final sourceCode in SPConst.settingsSelectableFoodSources)
             Semantics(
-              identifier: 'onboarding-food-source-${sourceCode.replaceAll('_', '-')}',
+              identifier:
+                  'onboarding-food-source-${sourceCode.replaceAll('_', '-')}',
               child: SwitchListTile(
                 dense: true,
                 title: Text(

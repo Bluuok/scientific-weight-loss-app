@@ -349,7 +349,8 @@ class _MealDetailBottomSheetState extends State<MealDetailBottomSheet> {
     ).showSnackBar(SnackBar(content: Text(S.of(context).infoAddedIntakeLabel)));
     Navigator.of(
       context,
-    ).popUntil(namedRouteOrFirst(NavigationOptions.mainRoute));
+    ).popUntil((route) => route.settings.name == NavigationOptions.plannerDayRoute ||
+      namedRouteOrFirst(NavigationOptions.mainRoute)(route));
   }
 
   // #212: Check if this meal was already added today for the same meal type

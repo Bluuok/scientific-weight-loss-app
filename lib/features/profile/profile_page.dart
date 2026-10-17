@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:opennutritracker/features/profile/presentation/widgets/profile_switcher_sheet.dart';
+import 'package:opennutritracker/core/utils/ai_credential_storage.dart';
+import 'package:opennutritracker/features/add_meal/domain/usecase/run_ai_endpoint_probe_usecase.dart';
+import 'package:opennutritracker/features/settings/presentation/widgets/ai_assist_dialog.dart';
+import 'package:opennutritracker/features/meal_planner/data/planner_repository.dart';
+import 'package:opennutritracker/features/meal_planner/presentation/planner_page.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:opennutritracker/core/domain/entity/body_weight_unit_entity.dart';
 import 'package:opennutritracker/core/domain/entity/calories_profile_entity.dart';
@@ -37,7 +43,8 @@ import 'package:opennutritracker/features/settings/presentation/widgets/water_go
 import 'package:opennutritracker/generated/l10n.dart';
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  final bool focused;
+  const ProfilePage({super.key, this.focused = false});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -100,12 +107,38 @@ class _ProfilePageState extends State<ProfilePage> {
         Dimens.spacing32,
       ),
       children: [
-        const ProfileSwitcherHeader(),
+        if (widget.focused)
+          ListTile(
+            leading: const Icon(Icons.people_outline),
+            title: const Text('家人资料'),
+            subtitle: const Text('添加或切换资料，分别保存计划和记录'),
+            onTap: () => showProfileSwitcherSheet(context),
+          )
+        else
+          const ProfileSwitcherHeader(),
         const SizedBox(height: Dimens.spacing24),
-        BMIOverview(
-          bmiValue: userBMIEntity.bmiValue,
-          nutritionalStatus: userBMIEntity.nutritionalStatus,
-        ),
+        if (widget.focused)
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('当前身体资料', style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  '${user.age}岁 · 身高${user.heightCM}厘米 · 体重${user.weightKG}千克',
+                ),
+                Text(
+                  '体质指数 ${userBMIEntity.bmiValue.toStringAsFixed(1)} · ${userBMIEntity.nutritionalStatus.getName(context)}',
+                ),
+                const Text('修改资料或记录体重，请点下方对应项目。'),
+              ],
+            ),
+          )
+        else
+          BMIOverview(
+            bmiValue: userBMIEntity.bmiValue,
+            nutritionalStatus: userBMIEntity.nutritionalStatus,
+          ),
         const SizedBox(height: Dimens.spacing32),
         SectionHeader(label: S.of(context).goalLabel, palette: palette),
         const SizedBox(height: Dimens.spacing12),
@@ -128,18 +161,19 @@ class _ProfilePageState extends State<ProfilePage> {
               subtitle: user.goal.getName(context),
               onTap: () => _showSetGoalDialog(context, user),
             ),
-            _ProfileTile(
-              identifier: 'profile-weekly-goal',
-              palette: palette,
-              icon: Icons.trending_down_rounded,
-              title: S.of(context).weeklyWeightGoalLabel,
-              subtitle: _weeklyGoalSubtitle(context, user, bodyWeightUnit),
-              onTap: () => _showSetWeeklyWeightGoalDialog(
-                context,
-                user,
-                bodyWeightUnit,
+            if (!widget.focused)
+              _ProfileTile(
+                identifier: 'profile-weekly-goal',
+                palette: palette,
+                icon: Icons.trending_down_rounded,
+                title: S.of(context).weeklyWeightGoalLabel,
+                subtitle: _weeklyGoalSubtitle(context, user, bodyWeightUnit),
+                onTap: () => _showSetWeeklyWeightGoalDialog(
+                  context,
+                  user,
+                  bodyWeightUnit,
+                ),
               ),
-            ),
           ],
         ),
         const SizedBox(height: Dimens.spacing24),
@@ -165,9 +199,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       lbLabel: S.of(context).lbsLabel,
                       stLabel: S.of(context).stLabel,
                     ),
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: palette.textMuted,
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: palette.textMuted),
                   ),
                   // #119: When the user has set a concrete target weight, surface
                   // the distance to it directly below the current weight. The
@@ -176,9 +210,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   if (user.targetWeightKg != null)
                     Text(
                       _targetWeightSubLabel(context, user, bodyWeightUnit),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: palette.textMuted,
-                          ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: palette.textMuted),
                     ),
                 ],
               ),
@@ -207,7 +241,7 @@ class _ProfilePageState extends State<ProfilePage> {
             // as current weight approaches the target. Surfaced here only
             // once a target weight is set, since without one the toggle
             // has nothing to scale against.
-            if (user.targetWeightKg != null)
+            if (!widget.focused && user.targetWeightKg != null)
               _ProfileSwitchTile(
                 identifier: 'profile-calorie-taper',
                 palette: palette,
@@ -227,41 +261,42 @@ class _ProfilePageState extends State<ProfilePage> {
                 context,
               ).pushNamed(NavigationOptions.weightHistoryRoute),
             ),
-            _ProfileTile(
-              identifier: 'profile-fasting-entry',
-              palette: palette,
-              icon: Icons.timer_rounded,
-              title: S.of(context).profileFastingEntry,
-              showChevron: true,
-              onTap: () =>
-                  Navigator.of(context).pushNamed(NavigationOptions.fastingRoute),
-            ),
+            if (!widget.focused)
+              _ProfileTile(
+                identifier: 'profile-fasting-entry',
+                palette: palette,
+                icon: Icons.timer_rounded,
+                title: S.of(context).profileFastingEntry,
+                showChevron: true,
+                onTap: () => Navigator.of(
+                  context,
+                ).pushNamed(NavigationOptions.fastingRoute),
+              ),
           ],
         ),
+        if (!widget.focused) ...[
+          const SizedBox(height: Dimens.spacing24),
+          SectionHeader(
+            label: S.of(context).settingsWaterGoalLabel,
+            palette: palette,
+          ),
+          const SizedBox(height: Dimens.spacing12),
+          SectionGroup(
+            palette: palette,
+            tiles: [
+              _ProfileTile(
+                identifier: 'profile-water-goal',
+                palette: palette,
+                icon: Icons.water_drop_rounded,
+                title: S.of(context).settingsWaterGoalLabel,
+                subtitle: '$effectiveWaterGoalMl ${S.of(context).mlLabel}',
+                onTap: () => _showWaterGoalDialog(context),
+              ),
+            ],
+          ),
+        ],
         const SizedBox(height: Dimens.spacing24),
-        SectionHeader(
-          label: S.of(context).settingsWaterGoalLabel,
-          palette: palette,
-        ),
-        const SizedBox(height: Dimens.spacing12),
-        SectionGroup(
-          palette: palette,
-          tiles: [
-            _ProfileTile(
-              identifier: 'profile-water-goal',
-              palette: palette,
-              icon: Icons.water_drop_rounded,
-              title: S.of(context).settingsWaterGoalLabel,
-              subtitle: '$effectiveWaterGoalMl ${S.of(context).mlLabel}',
-              onTap: () => _showWaterGoalDialog(context),
-            ),
-          ],
-        ),
-        const SizedBox(height: Dimens.spacing24),
-        SectionHeader(
-          label: S.of(context).profileLabel,
-          palette: palette,
-        ),
+        SectionHeader(label: S.of(context).profileLabel, palette: palette),
         const SizedBox(height: Dimens.spacing12),
         SectionGroup(
           palette: palette,
@@ -308,57 +343,95 @@ class _ProfilePageState extends State<ProfilePage> {
                 palette: palette,
                 icon: Icons.tune_rounded,
                 title: S.of(context).caloriesProfileInfoTitle,
-                subtitle: (user.caloriesProfile ?? CaloriesProfileEntity.averaged)
-                    .getName(context),
+                subtitle:
+                    (user.caloriesProfile ?? CaloriesProfileEntity.averaged)
+                        .getName(context),
                 onTap: () {
                   _showCaloriesProfileDialog(context, user);
                 },
               ),
           ],
         ),
-        const SizedBox(height: Dimens.spacing24),
-        SectionHeader(label: S.of(context).recipesLabel, palette: palette),
-        const SizedBox(height: Dimens.spacing12),
-        SectionGroup(
-          palette: palette,
-          tiles: [
-            _ProfileTile(
-              identifier: 'profile-recipes',
-              palette: palette,
-              icon: Icons.menu_book_rounded,
-              title: S.of(context).recipesLabel,
-              showChevron: true,
-              onTap: () =>
-                  Navigator.of(context).pushNamed(NavigationOptions.recipesRoute),
-            ),
-          ],
-        ),
-        const SizedBox(height: Dimens.spacing24),
-        // The full settings surface lives inline so You is the single home for
-        // identity, goals and app preferences — but collapsed by default so the
-        // tab stays scannable. Reuses SettingsScreen unchanged; the pushed route
-        // still works for any other caller.
-        AppCard(
-          padding: EdgeInsets.zero,
-          child: Theme(
-            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-            child: ExpansionTile(
-              shape: const Border(),
-              collapsedShape: const Border(),
-              tilePadding: const EdgeInsets.symmetric(
-                horizontal: Dimens.spacing16,
-                vertical: Dimens.spacing4,
+        if (widget.focused) ...[
+          const SizedBox(height: Dimens.spacing24),
+          const Text(
+            '智能功能',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          ListTile(
+            leading: const Icon(Icons.event_available),
+            title: const Text('饮食偏好'),
+            subtitle: const Text('忌口、做饭习惯；服务配置在高级设置中'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) =>
+                    PlannerSettings(repo: locator<PlannerRepository>()),
               ),
-              leading: Icon(Icons.settings_rounded, color: palette.textMuted),
-              title: Text(
-                S.of(context).settingsLabel,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              childrenPadding: const EdgeInsets.only(bottom: Dimens.spacing8),
-              children: const [SettingsScreen(embedded: true)],
             ),
           ),
-        ),
+          ListTile(
+            leading: const Icon(Icons.auto_awesome),
+            title: const Text('食物识别设置（家人协助）'),
+            subtitle: const Text('平时在饮食记录中添加食物，使用文字或照片识别'),
+            onTap: () => AiAssistDialog.show(
+              context,
+              locator<AiCredentialStorage>(),
+              probeRunner: locator<AiEndpointProbeRunner>(),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.all(12),
+            child: Text('约5%仅是第一阶段参考，并非总减重上限。长期目标可在上方“目标体重”中设置，后续结合实际变化评估。'),
+          ),
+        ] else ...[
+          const SizedBox(height: Dimens.spacing24),
+          SectionHeader(label: S.of(context).recipesLabel, palette: palette),
+          const SizedBox(height: Dimens.spacing12),
+          SectionGroup(
+            palette: palette,
+            tiles: [
+              _ProfileTile(
+                identifier: 'profile-recipes',
+                palette: palette,
+                icon: Icons.menu_book_rounded,
+                title: S.of(context).recipesLabel,
+                showChevron: true,
+                onTap: () => Navigator.of(
+                  context,
+                ).pushNamed(NavigationOptions.recipesRoute),
+              ),
+            ],
+          ),
+          const SizedBox(height: Dimens.spacing24),
+          // The full settings surface lives inline so You is the single home for
+          // identity, goals and app preferences — but collapsed by default so the
+          // tab stays scannable. Reuses SettingsScreen unchanged; the pushed route
+          // still works for any other caller.
+          AppCard(
+            padding: EdgeInsets.zero,
+            child: Theme(
+              data: Theme.of(
+                context,
+              ).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                shape: const Border(),
+                collapsedShape: const Border(),
+                tilePadding: const EdgeInsets.symmetric(
+                  horizontal: Dimens.spacing16,
+                  vertical: Dimens.spacing4,
+                ),
+                leading: Icon(Icons.settings_rounded, color: palette.textMuted),
+                title: Text(
+                  S.of(context).settingsLabel,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                childrenPadding: const EdgeInsets.only(bottom: Dimens.spacing8),
+                children: const [SettingsScreen(embedded: true)],
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -388,11 +461,15 @@ class _ProfilePageState extends State<ProfilePage> {
     switch (bodyWeightUnit) {
       case BodyWeightUnit.kg:
         final sign = goal > 0 ? '+' : '';
-        return S.of(context).weeklyWeightGoalKgPerWeek('$sign${goal.toStringAsFixed(2)}');
+        return S
+            .of(context)
+            .weeklyWeightGoalKgPerWeek('$sign${goal.toStringAsFixed(2)}');
       case BodyWeightUnit.lb:
         final displayLb = goal * 2.20462;
         final sign = displayLb > 0 ? '+' : '';
-        return S.of(context).weeklyWeightGoalLbsPerWeek('$sign${displayLb.toStringAsFixed(2)}');
+        return S
+            .of(context)
+            .weeklyWeightGoalLbsPerWeek('$sign${displayLb.toStringAsFixed(2)}');
       case BodyWeightUnit.st:
         final displaySt = goal * 2.20462 / 14;
         final sign = displaySt > 0 ? '+' : '';
@@ -466,10 +543,8 @@ class _ProfilePageState extends State<ProfilePage> {
   ) async {
     final newKg = await showDialog<double>(
       context: context,
-      builder: (context) => SetWeightDialog(
-        initialKg: userEntity.weightKG,
-        unit: bodyWeightUnit,
-      ),
+      builder: (context) =>
+          SetWeightDialog(initialKg: userEntity.weightKG, unit: bodyWeightUnit),
     );
     if (newKg != null) {
       final now = DateTime.now();
@@ -674,12 +749,17 @@ class _ProfileTile extends StatelessWidget {
     return Semantics(
       identifier: identifier,
       child: ListTile(
-        leading: _IconChip(palette: palette, icon: icon, iconWidget: iconWidget),
+        leading: _IconChip(
+          palette: palette,
+          icon: icon,
+          iconWidget: iconWidget,
+        ),
         title: Text(
           title,
           style: text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
         ),
-        subtitle: subtitleWidget ??
+        subtitle:
+            subtitleWidget ??
             (subtitle != null
                 ? Text(
                     subtitle!,

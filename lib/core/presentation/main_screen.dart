@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:opennutritracker/features/home/presentation/bloc/home_bloc.dart';
+import 'package:opennutritracker/features/diary/presentation/bloc/diary_bloc.dart';
+import 'package:opennutritracker/features/diary/presentation/bloc/calendar_day_bloc.dart';
+import 'package:opennutritracker/features/meal_planner/presentation/planner_page.dart';
 import 'package:opennutritracker/core/domain/usecase/get_config_usecase.dart';
 import 'package:opennutritracker/core/presentation/widgets/add_item_bottom_sheet.dart';
 import 'package:opennutritracker/core/presentation/widgets/demo_mode_banner.dart';
@@ -9,10 +13,8 @@ import 'package:opennutritracker/core/utils/meal_type_suggester.dart';
 import 'package:opennutritracker/core/utils/navigation_options.dart';
 import 'package:opennutritracker/features/diary/diary_page.dart';
 import 'package:opennutritracker/core/presentation/widgets/home_appbar.dart';
-import 'package:opennutritracker/features/home/home_page.dart';
 import 'package:opennutritracker/core/presentation/widgets/main_appbar.dart';
 import 'package:opennutritracker/features/profile/profile_page.dart';
-import 'package:opennutritracker/features/trends/presentation/trends_page.dart';
 import 'package:opennutritracker/generated/l10n.dart';
 
 class MainScreen extends StatefulWidget {
@@ -102,16 +104,14 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   @override
   void didChangeDependencies() {
     _bodyPages = [
-      const HomePage(),
-      const DiaryPage(),
-      const TrendsPage(),
-      const ProfilePage(),
+      const PlannerPage(),
+      const DiaryPage(focused: true),
+      const ProfilePage(focused: true),
     ];
     _appbarPages = [
       const HomeAppbar(),
-      MainAppbar(title: S.of(context).diaryLabel, iconData: Icons.book),
-      MainAppbar(title: S.of(context).trendsLabel, iconData: Icons.insights),
-      MainAppbar(title: S.of(context).youLabel, iconData: Icons.account_circle),
+      MainAppbar(title: '饮食记录', iconData: Icons.book),
+      MainAppbar(title: '我的资料', iconData: Icons.account_circle),
     ];
     super.didChangeDependencies();
   }
@@ -121,7 +121,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final palette = isDark ? AppPalette.dark : AppPalette.light;
     return Scaffold(
-      appBar: _appbarPages[_selectedPageIndex],
+      appBar: _selectedPageIndex == 0 ? null : _appbarPages[_selectedPageIndex],
       body: Column(
         children: [
           if (_isDemoData) const DemoModeBanner(),
@@ -133,22 +133,26 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
           ),
         ],
       ),
-      floatingActionButton: Semantics(
-        identifier: 'fab-add-item',
-        child: FloatingActionButton(
-          onPressed: () => _onFabPressed(context),
-          tooltip: S.of(context).addLabel,
-          child: const Icon(Icons.add, size: 30),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: _selectedPageIndex != 1
+          ? null
+          : Semantics(
+              identifier: 'fab-add-item',
+              child: FloatingActionButton.extended(
+                onPressed: () => _onFabPressed(context),
+                tooltip: S.of(context).addLabel,
+                icon: const Icon(Icons.add, size: 30),
+                label: const Text('记录饮食'),
+              ),
+            ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: BottomAppBar(
         color: palette.surface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        height: 78,
+        height:
+            78 + (MediaQuery.textScalerOf(context).scale(14) - 14).clamp(0, 60),
         padding: EdgeInsets.zero,
-        shape: const CircularNotchedRectangle(),
+        shape: const AutomaticNotchedShape(RoundedRectangleBorder()),
         notchMargin: 8,
         child: Row(
           children: [
@@ -156,7 +160,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               id: 'nav-home',
               icon: Icons.home_outlined,
               selectedIcon: Icons.home_rounded,
-              label: S.of(context).homeLabel,
+              label: '我的计划',
               index: 0,
               selectedIndex: _selectedPageIndex,
               palette: palette,
@@ -166,19 +170,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               id: 'nav-diary',
               icon: Icons.book_outlined,
               selectedIcon: Icons.book_rounded,
-              label: S.of(context).diaryLabel,
+              label: '饮食记录',
               index: 1,
-              selectedIndex: _selectedPageIndex,
-              palette: palette,
-              onTap: _setPage,
-            ),
-            const SizedBox(width: 64), // notch gap for the centre Add FAB
-            _NavItem(
-              id: 'nav-trends',
-              icon: Icons.insights_outlined,
-              selectedIcon: Icons.insights_rounded,
-              label: S.of(context).trendsLabel,
-              index: 2,
               selectedIndex: _selectedPageIndex,
               palette: palette,
               onTap: _setPage,
@@ -187,8 +180,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
               id: 'nav-you',
               icon: Icons.account_circle_outlined,
               selectedIcon: Icons.account_circle_rounded,
-              label: S.of(context).youLabel,
-              index: 3,
+              label: '我的资料',
+              index: 2,
               selectedIndex: _selectedPageIndex,
               palette: palette,
               onTap: _setPage,
@@ -200,7 +193,15 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   void _setPage(int selectedIndex) {
+    if (_selectedPageIndex == 0 && selectedIndex != 0) {
+      locator<HomeBloc>().add(const LoadItemsEvent());
+      locator<DiaryBloc>().add(const LoadDiaryYearEvent());
+      locator<CalendarDayBloc>().add(const RefreshCalendarDayEvent());
+    }
     setState(() {
+      if (selectedIndex == 0 && _selectedPageIndex != 0) {
+        _bodyPages[0] = PlannerPage(key: UniqueKey());
+      }
       _selectedPageIndex = selectedIndex;
     });
   }
@@ -213,8 +214,9 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       isScrollControlled: true,
       builder: (BuildContext context) {
         return AddItemBottomSheet(
+          focused: true,
           day: DateTime.now(),
-          showActivityTracking: config.showActivityTracking,
+          showActivityTracking: false,
           usesImperialUnits: config.usesImperialFoodUnits,
           suggestedType: MealTypeSuggester.suggestFromTime(DateTime.now()),
         );

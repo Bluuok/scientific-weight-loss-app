@@ -189,7 +189,7 @@ class _DayInfoWidgetState extends State<DayInfoWidget> {
             Dimens.spacing4,
           ),
           child: Text(
-            DateFormat.yMMMMEEEEd().format(widget.selectedDay),
+            DateFormat.yMMMMEEEEd(Localizations.localeOf(context).toString()).format(widget.selectedDay),
             style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
           ),
         ),

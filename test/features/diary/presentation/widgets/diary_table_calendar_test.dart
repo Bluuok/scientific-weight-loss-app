@@ -5,32 +5,34 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opennutritracker/features/diary/presentation/widgets/diary_table_calendar.dart';
 import 'package:opennutritracker/generated/l10n.dart';
 
-Widget _app({required double textScale}) => MediaQuery(
-      data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
-      child: MaterialApp(
-        localizationsDelegates: const [
-          S.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: S.supportedLocales,
-        home: Scaffold(
-          body: DiaryTableCalendar(
-            onDateSelected: (_, _) {},
-            calendarDurationDays: const Duration(days: 365),
-            focusedDate: DateTime(2026, 8, 24),
-            currentDate: DateTime(2026, 8, 24),
-            selectedDate: DateTime(2026, 8, 24),
-            trackedDaysMap: const {},
-          ),
-        ),
+Widget _app({required double textScale, Locale? locale}) => MediaQuery(
+  data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
+  child: MaterialApp(
+    locale: locale,
+    localizationsDelegates: const [
+      S.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: S.supportedLocales,
+    home: Scaffold(
+      body: DiaryTableCalendar(
+        onDateSelected: (_, _) {},
+        calendarDurationDays: const Duration(days: 365),
+        focusedDate: DateTime(2026, 8, 24),
+        currentDate: DateTime(2026, 8, 24),
+        selectedDate: DateTime(2026, 8, 24),
+        trackedDaysMap: const {},
       ),
-    );
+    ),
+  ),
+);
 
 void main() {
-  testWidgets('the weekday headings are not clipped at large font sizes',
-      (tester) async {
+  testWidgets('the weekday headings are not clipped at large font sizes', (
+    tester,
+  ) async {
     // #766. `TableCalendar`'s `daysOfWeekHeight` defaults to a flat 16.0,
     // and the headings are `labelSmall` — 11sp on a 1.45 line height, which
     // is exactly 16 logical pixels. The row therefore has *no* slack at the
@@ -60,9 +62,20 @@ void main() {
       expect(
         given,
         greaterThanOrEqualTo(wanted),
-        reason: 'at ${scale}x a heading needs ${wanted}px and its row gives '
+        reason:
+            'at ${scale}x a heading needs ${wanted}px and its row gives '
             '${given}px, so the top and bottom of the label are cut off',
       );
     }
+  });
+  testWidgets('Chinese app shows Chinese calendar month and weekday names', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_app(textScale: 1.4, locale: const Locale('zh')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('2026年8月'), findsOneWidget);
+    expect(find.text('周一'), findsOneWidget);
+    expect(find.textContaining('August'), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 }

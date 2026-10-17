@@ -301,7 +301,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(S.of(context).bulkAddTitle),
+        title: Text(Localizations.localeOf(context).languageCode == 'zh' ? '文字/照片记饮食' : S.of(context).bulkAddTitle),
         actions: [
           // Only offered when the user has a key enabled. There is no
           // offline way to read a photo, so showing the action to everyone
@@ -311,11 +311,9 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
             builder: (context, snapshot) => snapshot.data == true
                 ? Semantics(
                     identifier: 'bulk-add-photo',
-                    child: IconButton(
-                      onPressed: _onPhotoPressed,
-                      icon: const Icon(Icons.photo_camera_rounded),
-                      tooltip: S.of(context).bulkAddPhotoLabel,
-                    ),
+                    child: Localizations.localeOf(context).languageCode == 'zh'
+                      ? TextButton.icon(onPressed: _onPhotoPressed, icon: const Icon(Icons.photo_camera_rounded), label: const Text('照片'))
+                      : IconButton(onPressed: _onPhotoPressed, icon: const Icon(Icons.photo_camera_rounded), tooltip: S.of(context).bulkAddPhotoLabel),
                   )
                 : const SizedBox.shrink(),
           ),
@@ -471,7 +469,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
               textInputAction: TextInputAction.newline,
               keyboardType: TextInputType.multiline,
               decoration: InputDecoration(
-                hintText: S.of(context).bulkAddInputHint,
+                hintText: Localizations.localeOf(context).languageCode == 'zh' ? '写下吃了什么，例如：150克米饭、1个鸡蛋。照片请点右上角。' : S.of(context).bulkAddInputHint,
                 border: const OutlineInputBorder(),
               ),
             ),
@@ -483,7 +481,7 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
           child: FilledButton.icon(
             onPressed: _onParsePressed,
             icon: const Icon(Icons.search),
-            label: Text(S.of(context).bulkAddParseLabel),
+            label: Text(Localizations.localeOf(context).languageCode == 'zh' ? '识别并核对食物' : S.of(context).bulkAddParseLabel),
           ),
         ),
       ],

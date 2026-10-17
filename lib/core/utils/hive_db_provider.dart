@@ -37,6 +37,7 @@ import 'package:opennutritracker/hive_registrar.g.dart';
 class HiveDBProvider extends ChangeNotifier {
   static bool _adaptersRegistered = false;
 
+  static const plannerBoxName = 'MealPlannerBox';
   static const configBoxName = 'ConfigBox';
   static const intakeBoxName = 'IntakeBox';
   static const userActivityBoxName = 'UserActivityBox';
@@ -75,6 +76,7 @@ class HiveDBProvider extends ChangeNotifier {
   // activity-template libraries are deliberately NOT here — they are shared
   // content (see the global boxes below), not per-profile data.
   static const perProfileBoxNames = <String>[
+    plannerBoxName,
     configBoxName,
     intakeBoxName,
     userActivityBoxName,
@@ -102,6 +104,8 @@ class HiveDBProvider extends ChangeNotifier {
   // Per-profile boxes. Nullable rather than `late` so that a read during
   // the brief close/open window of a profile switch throws a descriptive
   // error through `_requireBox` instead of Hive's opaque closed-box error.
+  Box<String>? _plannerBox;
+  Box<String> get plannerBox => _requireBox(_plannerBox, plannerBoxName);
   Box<ConfigDBO>? _configBox;
   Box<IntakeDBO>? _intakeBox;
   Box<UserActivityDBO>? _userActivityBox;
@@ -212,6 +216,7 @@ class HiveDBProvider extends ChangeNotifier {
 
   Future<void> _openActiveProfileBoxes() async {
     final suffix = _activeBoxSuffix;
+    _plannerBox = await _openEncryptedBox(boxNameFor(plannerBoxName, suffix));
     _configBox = await _openEncryptedBox(boxNameFor(configBoxName, suffix));
     _intakeBox = await _openEncryptedBox(boxNameFor(intakeBoxName, suffix));
     _userActivityBox = await _openEncryptedBox(
@@ -232,6 +237,7 @@ class HiveDBProvider extends ChangeNotifier {
 
   Future<void> _closeActiveProfileBoxes() async {
     await Future.wait([
+      if (_plannerBox != null) _plannerBox!.close(),
       if (_configBox != null) _configBox!.close(),
       if (_intakeBox != null) _intakeBox!.close(),
       if (_userActivityBox != null) _userActivityBox!.close(),
@@ -241,6 +247,7 @@ class HiveDBProvider extends ChangeNotifier {
       if (_waterIntakeBox != null) _waterIntakeBox!.close(),
       if (_fastingBox != null) _fastingBox!.close(),
     ]);
+    _plannerBox = null;
     _configBox = null;
     _intakeBox = null;
     _userActivityBox = null;

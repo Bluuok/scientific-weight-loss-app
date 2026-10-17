@@ -1,0 +1,633 @@
+{
+  "version": "USDA-SR-Legacy-2018-local-v1",
+  "basis": "per 100g edible portion; sodium mg, other nutrients g except kcal",
+  "download_url": "https://fdc.nal.usda.gov/fdc-datasets/FoodData_Central_sr_legacy_food_csv_2018-04.zip",
+  "archive_sha256": "b80817294b8850530aaedf2e515c02593b1824f763a0ff356e5c2081643e6fd0",
+  "foods": [
+    {
+      "id": "oats",
+      "fdc_id": "169705",
+      "name": "燕麦",
+      "group": "grain",
+      "state": "干重",
+      "source_description": "Oats (Includes foods for USDA's Food Distribution Program)",
+      "source_url": "https://fdc.nal.usda.gov/food-details/169705/nutrients",
+      "fiber": 10.6,
+      "sodium": 2.0,
+      "protein": 16.89,
+      "fat": 6.9,
+      "carbs": 66.27,
+      "kcal": 389.0
+    },
+    {
+      "id": "rice",
+      "fdc_id": "169703",
+      "name": "糙米",
+      "group": "grain",
+      "state": "干重",
+      "source_description": "Rice, brown, long-grain, raw (Includes foods for USDA's Food Distribution Program)",
+      "source_url": "https://fdc.nal.usda.gov/food-details/169703/nutrients",
+      "fat": 3.2,
+      "carbs": 76.25,
+      "kcal": 367.0,
+      "fiber": 3.6,
+      "sodium": 5.0,
+      "protein": 7.54
+    },
+    {
+      "id": "milk",
+      "fdc_id": "170872",
+      "name": "低脂牛奶",
+      "group": "dairy",
+      "state": "即饮重量",
+      "source_description": "Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D",
+      "source_url": "https://fdc.nal.usda.gov/food-details/170872/nutrients",
+      "sodium": 44.0,
+      "protein": 3.37,
+      "fat": 0.97,
+      "carbs": 4.99,
+      "kcal": 42.0,
+      "fiber": 0.0
+    },
+    {
+      "id": "egg",
+      "fdc_id": "171287",
+      "name": "鸡蛋",
+      "group": "protein",
+      "state": "去壳生重",
+      "source_description": "Egg, whole, raw, fresh",
+      "source_url": "https://fdc.nal.usda.gov/food-details/171287/nutrients",
+      "kcal": 143.0,
+      "protein": 12.56,
+      "sodium": 142.0,
+      "fat": 9.51,
+      "carbs": 0.72,
+      "fiber": 0.0
+    },
+    {
+      "id": "chicken",
+      "fdc_id": "171077",
+      "name": "去皮鸡胸肉",
+      "group": "protein",
+      "state": "生重",
+      "source_description": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw",
+      "source_url": "https://fdc.nal.usda.gov/food-details/171077/nutrients",
+      "fat": 2.62,
+      "kcal": 120.0,
+      "sodium": 45.0,
+      "protein": 22.5,
+      "carbs": 0.0,
+      "fiber": 0.0
+    },
+    {
+      "id": "beef",
+      "fdc_id": "171790",
+      "name": "瘦牛肉糜（95%瘦）",
+      "group": "protein",
+      "state": "生重",
+      "source_description": "Beef, ground, 95% lean meat / 5% fat, raw",
+      "source_url": "https://fdc.nal.usda.gov/food-details/171790/nutrients",
+      "protein": 21.41,
+      "fiber": 0.0,
+      "sodium": 66.0,
+      "fat": 5.0,
+      "carbs": 0.0,
+      "kcal": 137.0
+    },
+    {
+      "id": "fish",
+      "fdc_id": "171955",
+      "name": "鳕鱼",
+      "group": "protein",
+      "state": "生重",
+      "source_description": "Fish, cod, Atlantic, raw",
+      "source_url": "https://fdc.nal.usda.gov/food-details/171955/nutrients",
+      "kcal": 82.0,
+      "fiber": 0.0,
+      "sodium": 54.0,
+      "protein": 17.81,
+      "fat": 0.67,
+      "carbs": 0.0
+    },
+    {
+      "id": "tofu",
+      "fdc_id": "172475",
+      "name": "钙凝固硬豆腐",
+      "group": "protein",
+      "state": "生重",
+      "source_description": "Tofu, raw, firm, prepared with calcium sulfate",
+      "source_url": "https://fdc.nal.usda.gov/food-details/172475/nutrients",
+      "fiber": 2.3,
+      "carbs": 2.78,
+      "kcal": 144.0,
+      "protein": 17.27,
+      "sodium": 14.0,
+      "fat": 8.72
+    },
+    {
+      "id": "broccoli",
+      "fdc_id": "170379",
+      "name": "西兰花",
+      "group": "vegetable",
+      "state": "生重",
+      "source_description": "Broccoli, raw",
+      "source_url": "https://fdc.nal.usda.gov/food-details/170379/nutrients",
+      "carbs": 6.64,
+      "kcal": 34.0,
+      "fat": 0.37,
+      "protein": 2.82,
+      "fiber": 2.6,
+      "sodium": 33.0
+    },
+    {
+      "id": "lettuce",
+      "fdc_id": "169249",
+      "name": "生菜",
+      "group": "vegetable",
+      "state": "生重",
+      "source_description": "Lettuce, green leaf, raw",
+      "source_url": "https://fdc.nal.usda.gov/food-details/169249/nutrients",
+      "fiber": 1.3,
+      "carbs": 2.87,
+      "kcal": 15.0,
+      "protein": 1.36,
+      "sodium": 28.0,
+      "fat": 0.15
+    },
+    {
+      "id": "carrot",
+      "fdc_id": "170393",
+      "name": "胡萝卜",
+      "group": "vegetable",
+      "state": "生重",
+      "source_description": "Carrots, raw",
+      "source_url": "https://fdc.nal.usda.gov/food-details/170393/nutrients",
+      "sodium": 69.0,
+      "protein": 0.93,
+      "fat": 0.24,
+      "carbs": 9.58,
+      "kcal": 41.0,
+      "fiber": 2.8
+    },
+    {
+      "id": "cabbage",
+      "fdc_id": "169975",
+      "name": "卷心菜",
+      "group": "vegetable",
+      "state": "生重",
+      "source_description": "Cabbage, raw",
+      "source_url": "https://fdc.nal.usda.gov/food-details/169975/nutrients",
+      "fat": 0.1,
+      "carbs": 5.8,
+      "kcal": 25.0,
+      "protein": 1.28,
+      "fiber": 2.5,
+      "sodium": 18.0
+    },
+    {
+      "id": "tomato",
+      "fdc_id": "170457",
+      "name": "番茄",
+      "group": "vegetable",
+      "state": "生重",
+      "source_description": "Tomatoes, red, ripe, raw, year round average",
+      "source_url": "https://fdc.nal.usda.gov/food-details/170457/nutrients",
+      "carbs": 3.89,
+      "kcal": 18.0,
+      "fat": 0.2,
+      "fiber": 1.2,
+      "sodium": 5.0,
+      "protein": 0.88
+    },
+    {
+      "id": "cucumber",
+      "fdc_id": "168409",
+      "name": "黄瓜",
+      "group": "vegetable",
+      "state": "生重",
+      "source_description": "Cucumber, with peel, raw",
+      "source_url": "https://fdc.nal.usda.gov/food-details/168409/nutrients",
+      "carbs": 3.63,
+      "kcal": 15.0,
+      "sodium": 2.0,
+      "fat": 0.11,
+      "fiber": 0.5,
+      "protein": 0.65
+    },
+    {
+      "id": "spinach",
+      "fdc_id": "168462",
+      "name": "菠菜",
+      "group": "vegetable",
+      "state": "生重",
+      "source_description": "Spinach, raw",
+      "source_url": "https://fdc.nal.usda.gov/food-details/168462/nutrients",
+      "protein": 2.86,
+      "sodium": 79.0,
+      "fiber": 2.2,
+      "fat": 0.39,
+      "carbs": 3.63,
+      "kcal": 23.0
+    },
+    {
+      "id": "mushroom",
+      "fdc_id": "169251",
+      "name": "白蘑菇",
+      "group": "vegetable",
+      "state": "生重",
+      "source_description": "Mushrooms, white, raw",
+      "source_url": "https://fdc.nal.usda.gov/food-details/169251/nutrients",
+      "fiber": 1.0,
+      "fat": 0.34,
+      "sodium": 5.0,
+      "protein": 3.09,
+      "carbs": 3.26,
+      "kcal": 22.0
+    },
+    {
+      "id": "apple",
+      "fdc_id": "171688",
+      "name": "苹果",
+      "group": "fruit",
+      "state": "带皮可食部生重",
+      "source_description": "Apples, raw, with skin (Includes foods for USDA's Food Distribution Program)",
+      "source_url": "https://fdc.nal.usda.gov/food-details/171688/nutrients",
+      "carbs": 13.81,
+      "kcal": 52.0,
+      "fat": 0.17,
+      "fiber": 2.4,
+      "sodium": 1.0,
+      "protein": 0.26
+    },
+    {
+      "id": "banana",
+      "fdc_id": "173944",
+      "name": "香蕉",
+      "group": "fruit",
+      "state": "去皮生重",
+      "source_description": "Bananas, raw",
+      "source_url": "https://fdc.nal.usda.gov/food-details/173944/nutrients",
+      "carbs": 22.84,
+      "kcal": 89.0,
+      "fiber": 2.6,
+      "sodium": 1.0,
+      "protein": 1.09,
+      "fat": 0.33
+    },
+    {
+      "id": "orange",
+      "fdc_id": "169097",
+      "name": "橙子",
+      "group": "fruit",
+      "state": "去皮生重",
+      "source_description": "Oranges, raw, all commercial varieties",
+      "source_url": "https://fdc.nal.usda.gov/food-details/169097/nutrients",
+      "fat": 0.12,
+      "carbs": 11.75,
+      "kcal": 47.0,
+      "fiber": 2.4,
+      "sodium": 0.0,
+      "protein": 0.94
+    },
+    {
+      "id": "pear",
+      "fdc_id": "169118",
+      "name": "梨",
+      "group": "fruit",
+      "state": "可食部生重",
+      "source_description": "Pears, raw",
+      "source_url": "https://fdc.nal.usda.gov/food-details/169118/nutrients",
+      "fat": 0.14,
+      "carbs": 15.23,
+      "kcal": 57.0,
+      "protein": 0.36,
+      "fiber": 3.1,
+      "sodium": 1.0
+    },
+    {
+      "id": "potato",
+      "fdc_id": "170026",
+      "name": "土豆",
+      "group": "starch",
+      "state": "生重",
+      "source_description": "Potatoes, flesh and skin, raw",
+      "source_url": "https://fdc.nal.usda.gov/food-details/170026/nutrients",
+      "fat": 0.09,
+      "kcal": 77.0,
+      "sodium": 6.0,
+      "protein": 2.05,
+      "fiber": 2.1,
+      "carbs": 17.49
+    },
+    {
+      "id": "sweet_potato",
+      "fdc_id": "168482",
+      "name": "红薯",
+      "group": "starch",
+      "state": "生重",
+      "source_description": "Sweet potato, raw, unprepared (Includes foods for USDA's Food Distribution Program)",
+      "source_url": "https://fdc.nal.usda.gov/food-details/168482/nutrients",
+      "fiber": 3.0,
+      "carbs": 20.12,
+      "kcal": 86.0,
+      "sodium": 55.0,
+      "fat": 0.05,
+      "protein": 1.57
+    },
+    {
+      "id": "walnut",
+      "fdc_id": "170187",
+      "name": "核桃仁",
+      "group": "nuts",
+      "state": "可食部生重",
+      "source_description": "Nuts, walnuts, english",
+      "source_url": "https://fdc.nal.usda.gov/food-details/170187/nutrients",
+      "carbs": 13.71,
+      "kcal": 654.0,
+      "protein": 15.23,
+      "fiber": 6.7,
+      "sodium": 2.0,
+      "fat": 65.21
+    },
+    {
+      "id": "oil",
+      "fdc_id": "171413",
+      "name": "橄榄油",
+      "group": "oil",
+      "state": "实际用量",
+      "source_description": "Oil, olive, salad or cooking",
+      "source_url": "https://fdc.nal.usda.gov/food-details/171413/nutrients",
+      "fat": 100.0,
+      "carbs": 0.0,
+      "kcal": 884.0,
+      "sodium": 2.0,
+      "protein": 0.0,
+      "fiber": 0.0
+    },
+    {
+      "id": "salt",
+      "fdc_id": "173468",
+      "name": "普通食盐",
+      "group": "salt",
+      "state": "实际用量",
+      "source_description": "Salt, table",
+      "source_url": "https://fdc.nal.usda.gov/food-details/173468/nutrients",
+      "fiber": 0.0,
+      "sodium": 38758.0,
+      "protein": 0.0,
+      "fat": 0.0,
+      "carbs": 0.0,
+      "kcal": 0.0
+    },
+    {
+      "id": "soybean",
+      "fdc_id": "169282",
+      "name": "毛豆仁",
+      "group": "protein",
+      "state": "生重",
+      "source_description": "Soybeans, green, raw",
+      "source_url": "https://fdc.nal.usda.gov/food-details/169282/nutrients",
+      "carbs": 11.05,
+      "kcal": 147.0,
+      "protein": 12.95,
+      "fiber": 4.2,
+      "sodium": 15.0,
+      "fat": 6.8
+    }
+  ],
+  "recipes": [
+    {
+      "id": "b0",
+      "name": "苹果燕麦早餐",
+      "ingredients": {
+        "oats": 80,
+        "milk": 300,
+        "egg": 60,
+        "walnut": 15,
+        "apple": 200
+      },
+      "simple": false,
+      "slots": [
+        "breakfast"
+      ],
+      "method": "燕麦按干重称量，用水煮熟；鸡蛋称去壳生重后煮熟；牛奶直接饮用。搭配所列水果和核桃，不额外加糖、油、盐。"
+    },
+    {
+      "id": "b1",
+      "name": "香蕉燕麦早餐",
+      "ingredients": {
+        "oats": 80,
+        "milk": 300,
+        "egg": 60,
+        "walnut": 15,
+        "banana": 200
+      },
+      "simple": false,
+      "slots": [
+        "breakfast"
+      ],
+      "method": "燕麦按干重称量，用水煮熟；鸡蛋称去壳生重后煮熟；牛奶直接饮用。搭配所列水果和核桃，不额外加糖、油、盐。"
+    },
+    {
+      "id": "b2",
+      "name": "香橙燕麦早餐",
+      "ingredients": {
+        "oats": 80,
+        "milk": 300,
+        "egg": 60,
+        "walnut": 15,
+        "orange": 200
+      },
+      "simple": false,
+      "slots": [
+        "breakfast"
+      ],
+      "method": "燕麦按干重称量，用水煮熟；鸡蛋称去壳生重后煮熟；牛奶直接饮用。搭配所列水果和核桃，不额外加糖、油、盐。"
+    },
+    {
+      "id": "s0",
+      "name": "鸡胸西兰花简洁餐",
+      "ingredients": {
+        "rice": 90,
+        "oil": 10,
+        "salt": 1,
+        "lettuce": 100,
+        "chicken": 150,
+        "broccoli": 200
+      },
+      "simple": true,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。"
+    },
+    {
+      "id": "s1",
+      "name": "瘦牛肉卷心菜简洁餐",
+      "ingredients": {
+        "rice": 90,
+        "oil": 10,
+        "salt": 1,
+        "lettuce": 100,
+        "beef": 150,
+        "cabbage": 200
+      },
+      "simple": true,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。"
+    },
+    {
+      "id": "s2",
+      "name": "清蒸鳕鱼菠菜简洁餐",
+      "ingredients": {
+        "rice": 90,
+        "oil": 10,
+        "salt": 1,
+        "lettuce": 100,
+        "fish": 180,
+        "spinach": 200
+      },
+      "simple": true,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。"
+    },
+    {
+      "id": "s3",
+      "name": "豆腐番茄简洁餐",
+      "ingredients": {
+        "rice": 90,
+        "oil": 10,
+        "salt": 1,
+        "lettuce": 100,
+        "tofu": 180,
+        "tomato": 200
+      },
+      "simple": true,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。"
+    },
+    {
+      "id": "s4",
+      "name": "鸡蛋蘑菇简洁餐",
+      "ingredients": {
+        "rice": 90,
+        "oil": 10,
+        "salt": 1,
+        "lettuce": 100,
+        "egg": 150,
+        "mushroom": 200
+      },
+      "simple": true,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。"
+    },
+    {
+      "id": "d0",
+      "name": "鸡肉糙米蔬菜餐",
+      "ingredients": {
+        "rice": 100,
+        "oil": 12,
+        "salt": 1,
+        "cucumber": 150,
+        "chicken": 130,
+        "carrot": 150,
+        "orange": 150
+      },
+      "simple": false,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。"
+    },
+    {
+      "id": "d1",
+      "name": "鳕鱼番茄糙米餐",
+      "ingredients": {
+        "rice": 100,
+        "oil": 12,
+        "salt": 1,
+        "cucumber": 150,
+        "fish": 180,
+        "tomato": 150,
+        "apple": 150
+      },
+      "simple": false,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。"
+    },
+    {
+      "id": "d2",
+      "name": "豆腐卷心菜糙米餐",
+      "ingredients": {
+        "rice": 100,
+        "oil": 12,
+        "salt": 1,
+        "cucumber": 150,
+        "tofu": 180,
+        "cabbage": 150,
+        "pear": 150
+      },
+      "simple": false,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。"
+    },
+    {
+      "id": "d3",
+      "name": "牛肉西兰花糙米餐",
+      "ingredients": {
+        "rice": 100,
+        "oil": 12,
+        "salt": 1,
+        "cucumber": 150,
+        "beef": 130,
+        "broccoli": 150,
+        "banana": 150
+      },
+      "simple": false,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。"
+    },
+    {
+      "id": "d4",
+      "name": "鸡蛋蘑菇糙米餐",
+      "ingredients": {
+        "rice": 100,
+        "oil": 12,
+        "salt": 1,
+        "cucumber": 150,
+        "egg": 120,
+        "mushroom": 150,
+        "apple": 150
+      },
+      "simple": false,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。"
+    }
+  ]
+}

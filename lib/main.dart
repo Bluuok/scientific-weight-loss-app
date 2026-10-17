@@ -294,7 +294,7 @@ class _OpenNutriTrackerAppState extends State<OpenNutriTrackerApp>
       theme: buildAppTheme(lightPalette),
       darkTheme: buildAppTheme(darkPalette),
       themeMode: Provider.of<ThemeModeProvider>(context).themeMode,
-      locale: Provider.of<LocaleProvider>(context).locale,
+      locale: const Locale('zh'),
       localizationsDelegates: const [
         S.delegate,
         GlobalMaterialLocalizations.delegate,

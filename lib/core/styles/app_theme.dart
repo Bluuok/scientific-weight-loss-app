@@ -9,7 +9,13 @@ import 'package:opennutritracker/core/styles/dimens.dart';
 TextTheme appTextTheme(AppPalette p) {
   const f = 'Nunito';
   TextStyle s(double size, FontWeight w, {double spacing = 0, Color? color}) =>
-      TextStyle(fontFamily: f, fontSize: size, fontWeight: w, letterSpacing: spacing, color: color ?? p.textStrong);
+      TextStyle(
+        fontFamily: f,
+        fontSize: size,
+        fontWeight: w,
+        letterSpacing: spacing,
+        color: color ?? p.textStrong,
+      );
   return TextTheme(
     displayLarge: s(57, FontWeight.w800, spacing: -1),
     displayMedium: s(45, FontWeight.w800, spacing: -0.5),
@@ -18,14 +24,14 @@ TextTheme appTextTheme(AppPalette p) {
     headlineMedium: s(28, FontWeight.w700),
     headlineSmall: s(23, FontWeight.w700),
     titleLarge: s(21, FontWeight.w700),
-    titleMedium: s(16, FontWeight.w700),
-    titleSmall: s(14, FontWeight.w600),
-    bodyLarge: s(16, FontWeight.w500),
-    bodyMedium: s(14, FontWeight.w500),
-    bodySmall: s(12.5, FontWeight.w500, color: p.textMuted),
-    labelLarge: s(15, FontWeight.w700),
-    labelMedium: s(13, FontWeight.w700),
-    labelSmall: s(11.5, FontWeight.w700, color: p.textMuted),
+    titleMedium: s(19, FontWeight.w700),
+    titleSmall: s(17, FontWeight.w600),
+    bodyLarge: s(19, FontWeight.w500),
+    bodyMedium: s(18, FontWeight.w500),
+    bodySmall: s(16, FontWeight.w500, color: p.textMuted),
+    labelLarge: s(18, FontWeight.w700),
+    labelMedium: s(16, FontWeight.w700),
+    labelSmall: s(14, FontWeight.w700, color: p.textMuted),
   );
 }
 
@@ -65,7 +71,8 @@ ThemeData buildAppTheme(AppPalette p) {
       backgroundColor: p.surface,
       indicatorColor: p.accent.withValues(alpha: 0.16),
       elevation: 0,
-      height: 72,
+      height: 80,
+      labelTextStyle: WidgetStatePropertyAll(text.labelMedium),
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
       indicatorShape: pill,
     ),
@@ -76,7 +83,9 @@ ThemeData buildAppTheme(AppPalette p) {
       focusElevation: 0,
       hoverElevation: 0,
       highlightElevation: 0,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(22))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(22)),
+      ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
@@ -98,9 +107,18 @@ ThemeData buildAppTheme(AppPalette p) {
     inputDecorationTheme: InputDecorationThemeData(
       filled: true,
       fillColor: p.surfaceMuted,
-      contentPadding: const EdgeInsets.symmetric(horizontal: Dimens.spacing16, vertical: Dimens.spacing12),
-      border: const OutlineInputBorder(borderRadius: Dimens.borderRadiusM, borderSide: BorderSide.none),
-      enabledBorder: const OutlineInputBorder(borderRadius: Dimens.borderRadiusM, borderSide: BorderSide.none),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: Dimens.spacing16,
+        vertical: Dimens.spacing12,
+      ),
+      border: const OutlineInputBorder(
+        borderRadius: Dimens.borderRadiusM,
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: const OutlineInputBorder(
+        borderRadius: Dimens.borderRadiusM,
+        borderSide: BorderSide.none,
+      ),
       focusedBorder: OutlineInputBorder(
         borderRadius: Dimens.borderRadiusM,
         borderSide: BorderSide(color: p.accent, width: 2),
@@ -116,12 +134,16 @@ ThemeData buildAppTheme(AppPalette p) {
       surfaceTintColor: Colors.transparent,
       shape: const RoundedRectangleBorder(borderRadius: Dimens.borderRadiusL),
     ),
-    listTileTheme: const ListTileThemeData(shape: RoundedRectangleBorder(borderRadius: Dimens.borderRadiusM)),
+    listTileTheme: const ListTileThemeData(
+      shape: RoundedRectangleBorder(borderRadius: Dimens.borderRadiusM),
+    ),
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: p.surface,
       surfaceTintColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(Dimens.radiusXL)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(Dimens.radiusXL),
+        ),
       ),
     ),
     pageTransitionsTheme: const PageTransitionsTheme(

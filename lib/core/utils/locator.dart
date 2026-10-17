@@ -1,4 +1,6 @@
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:opennutritracker/features/meal_planner/data/planner_repository.dart';
+import 'package:opennutritracker/features/meal_planner/data/meal_planning_service.dart';
 import 'package:get_it/get_it.dart';
 import 'package:opennutritracker/core/data/data_source/config_data_source.dart';
 import 'package:opennutritracker/core/data/data_source/custom_activity_template_data_source.dart';
@@ -213,6 +215,11 @@ Future<void> initLocator() async {
   locator.registerLazySingleton<CacheManager>(
     () => OntImageCacheManager.instance,
   );
+
+  locator.registerLazySingleton<PlannerRepository>(() => PlannerRepository(
+    locator(), locator(), locator(), locator(), locator(),
+    MealPlanningService(PlanningCredentials()), config: locator(),
+  ));
 
   // BLoCs
   locator.registerLazySingleton<OnboardingBloc>(

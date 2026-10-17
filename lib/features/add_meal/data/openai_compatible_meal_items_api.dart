@@ -169,6 +169,11 @@ class OpenAiCompatibleMealItemsApi implements MealItemsApi {
     final body = jsonEncode({
       'model': model,
       'max_tokens': _maxTokens,
+      // DeepSeek refuses forced tool choices in its default thinking mode.
+      // Only its official endpoint receives this provider-specific option.
+      if (endpoint.origin == 'https://api.deepseek.com' &&
+          model == 'deepseek-flash')
+        'thinking': {'type': 'disabled'},
       // No top-level `system` field here: the OpenAI-compatible shape wants
       // it as the first message.
       'messages': [
@@ -224,29 +229,30 @@ class OpenAiCompatibleMealItemsApi implements MealItemsApi {
         }
       else if (toolChoice == ToolChoiceMode.anyTool)
         'tool_choice': 'required',
-      if (broker != null) 'provider': {
-        // Without this, OpenRouter documents that a provider which does not
-        // support a parameter still receives the request and ignores it —
-        // and `tool_choice` is not in the set it steers by. A dropped
-        // `tool_choice` means a prose answer this client cannot read, which
-        // would surface as "malformed response" rather than as the
-        // capability problem it is. With it, an unfit provider is refused up
-        // front with a 404 the user can be told about.
-        'require_parameters': true,
-        // Routing default is `allow`, meaning providers that store input
-        // non-transiently and may train on it are eligible. The app cannot
-        // promise a destination's behaviour it never asked for.
-        //
-        // Enforced here as a policy field rather than by reading the slug:
-        // free *usage* triggers the training clauses, not the `:free`
-        // suffix, so slug inspection would be a check that looks like one
-        // and is not.
-        'data_collection': 'deny',
-        if (broker?.providers case final only?) ...{
-          'only': only,
-          'allow_fallbacks': false,
+      if (broker != null)
+        'provider': {
+          // Without this, OpenRouter documents that a provider which does not
+          // support a parameter still receives the request and ignores it —
+          // and `tool_choice` is not in the set it steers by. A dropped
+          // `tool_choice` means a prose answer this client cannot read, which
+          // would surface as "malformed response" rather than as the
+          // capability problem it is. With it, an unfit provider is refused up
+          // front with a 404 the user can be told about.
+          'require_parameters': true,
+          // Routing default is `allow`, meaning providers that store input
+          // non-transiently and may train on it are eligible. The app cannot
+          // promise a destination's behaviour it never asked for.
+          //
+          // Enforced here as a policy field rather than by reading the slug:
+          // free *usage* triggers the training clauses, not the `:free`
+          // suffix, so slug inspection would be a check that looks like one
+          // and is not.
+          'data_collection': 'deny',
+          if (broker?.providers case final only?) ...{
+            'only': only,
+            'allow_fallbacks': false,
+          },
         },
-      },
     });
 
     final http.Response response;

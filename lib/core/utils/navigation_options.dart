@@ -1,6 +1,7 @@
 class NavigationOptions {
   static const splashRoute = "splash";
   static const mainRoute = "main";
+  static const plannerDayRoute = "mealPlannerDay";
   static const onboardingRoute = "onboarding";
   static const settingsRoute = "settings";
   static const addMealRoute = "addMeal";

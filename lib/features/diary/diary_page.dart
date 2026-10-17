@@ -21,7 +21,8 @@ import 'package:opennutritracker/features/meal_detail/presentation/bloc/meal_det
 import 'package:opennutritracker/generated/l10n.dart';
 
 class DiaryPage extends StatefulWidget {
-  const DiaryPage({super.key});
+  final bool focused;
+  const DiaryPage({super.key, this.focused = false});
 
   @override
   State<DiaryPage> createState() => _DiaryPageState();
@@ -105,14 +106,32 @@ class _DiaryPageState extends State<DiaryPage> with WidgetsBindingObserver {
     return ListView(
       padding: const EdgeInsets.only(bottom: Dimens.spacing16),
       children: [
-        DiaryTableCalendar(
-          trackedDaysMap: trackedDaysMap,
-          onDateSelected: _onDateSelected,
-          calendarDurationDays: _calendarDurationDays,
-          currentDate: _currentDate,
-          selectedDate: _selectedDate,
-          focusedDate: _focusedDate,
-        ),
+        if (widget.focused)
+          Semantics(
+            identifier: 'diary-date-picker',
+            child: ExpansionTile(
+              title: const Text('切换日期、查看以前记录'),
+              children: [
+                DiaryTableCalendar(
+                  trackedDaysMap: trackedDaysMap,
+                  onDateSelected: _onDateSelected,
+                  calendarDurationDays: _calendarDurationDays,
+                  currentDate: _currentDate,
+                  selectedDate: _selectedDate,
+                  focusedDate: _focusedDate,
+                ),
+              ],
+            ),
+          )
+        else
+          DiaryTableCalendar(
+            trackedDaysMap: trackedDaysMap,
+            onDateSelected: _onDateSelected,
+            calendarDurationDays: _calendarDurationDays,
+            currentDate: _currentDate,
+            selectedDate: _selectedDate,
+            focusedDate: _focusedDate,
+          ),
         if (!DateUtils.isSameDay(_selectedDate, _currentDate))
           Align(
             alignment: Alignment.centerRight,
@@ -138,35 +157,37 @@ class _DiaryPageState extends State<DiaryPage> with WidgetsBindingObserver {
                 return _getLoadingContent();
               } else if (state is CalendarDayLoaded) {
                 return DayInfoWidget(
-                trackedDayEntity: state.trackedDayEntity,
-                selectedDay: _selectedDate,
-                userActivities: state.userActivityList,
-                breakfastIntake: state.breakfastIntakeList,
-                lunchIntake: state.lunchIntakeList,
-                dinnerIntake: state.dinnerIntakeList,
-                snackIntake: state.snackIntakeList,
-                onDeleteIntake: _onDeleteIntakeItem,
-                onDeleteActivity: _onDeleteActivityItem,
-                onCopyIntake: _onCopyIntakeItem,
-                onCopyActivity: _onCopyActivityItem,
-                onEditIntake: _onEditIntakeItem,
-                onEditActivity: _onEditActivityItem,
-                usesImperialUnits: usesImperialUnits,
-                showMealMacros: showMealMacros,
-                showActivityTracking: showActivityTracking,
-                breakfastKcalTarget: state.breakfastKcalTarget,
-                lunchKcalTarget: state.lunchKcalTarget,
-                dinnerKcalTarget: state.dinnerKcalTarget,
-                snackKcalTarget: state.snackKcalTarget,
-                breakfastSharePct: state.breakfastSharePct,
-                lunchSharePct: state.lunchSharePct,
-                dinnerSharePct: state.dinnerSharePct,
-                snackSharePct: state.snackSharePct,
-                diarySortPreferences: state.diarySortPreferences,
-              );
-            }
-            return const SizedBox();
-          },
+                  trackedDayEntity: state.trackedDayEntity,
+                  selectedDay: _selectedDate,
+                  userActivities: state.userActivityList,
+                  breakfastIntake: state.breakfastIntakeList,
+                  lunchIntake: state.lunchIntakeList,
+                  dinnerIntake: state.dinnerIntakeList,
+                  snackIntake: state.snackIntakeList,
+                  onDeleteIntake: _onDeleteIntakeItem,
+                  onDeleteActivity: _onDeleteActivityItem,
+                  onCopyIntake: _onCopyIntakeItem,
+                  onCopyActivity: _onCopyActivityItem,
+                  onEditIntake: _onEditIntakeItem,
+                  onEditActivity: _onEditActivityItem,
+                  usesImperialUnits: usesImperialUnits,
+                  showMealMacros: showMealMacros,
+                  showActivityTracking: widget.focused
+                      ? false
+                      : showActivityTracking,
+                  breakfastKcalTarget: state.breakfastKcalTarget,
+                  lunchKcalTarget: state.lunchKcalTarget,
+                  dinnerKcalTarget: state.dinnerKcalTarget,
+                  snackKcalTarget: state.snackKcalTarget,
+                  breakfastSharePct: state.breakfastSharePct,
+                  lunchSharePct: state.lunchSharePct,
+                  dinnerSharePct: state.dinnerSharePct,
+                  snackSharePct: state.snackSharePct,
+                  diarySortPreferences: state.diarySortPreferences,
+                );
+              }
+              return const SizedBox();
+            },
           ),
         ),
       ],
@@ -179,8 +200,11 @@ class _DiaryPageState extends State<DiaryPage> with WidgetsBindingObserver {
   ) {
     final velocity = details.primaryVelocity ?? 0;
     if (velocity == 0) return;
-    final today =
-        DateTime(_currentDate.year, _currentDate.month, _currentDate.day);
+    final today = DateTime(
+      _currentDate.year,
+      _currentDate.month,
+      _currentDate.day,
+    );
     // Swipe left advances a day, swipe right goes back. Clamp to the calendar's
     // range (no further back than 5 years, no further forward than today).
     final delta = velocity < 0 ? 1 : -1;
@@ -262,8 +286,7 @@ class _DiaryPageState extends State<DiaryPage> with WidgetsBindingObserver {
       // Custom activities (#70) store the user-entered kcal directly — the
       // MET formula would just return zero for them, so we pass the saved
       // kcal figure through unchanged so a copied entry keeps its calories.
-      final kcal =
-          userActivityEntity.userKcal ?? userActivityEntity.burnedKcal;
+      final kcal = userActivityEntity.userKcal ?? userActivityEntity.burnedKcal;
       _activityDetailBloc.persistActivity(
         kcal.toString(),
         kcal,
@@ -300,11 +323,9 @@ class _DiaryPageState extends State<DiaryPage> with WidgetsBindingObserver {
       ),
     );
     if (changeIntakeAmount != null) {
-      await _calendarDayBloc.updateIntakeItem(
-        intakeEntity.id,
-        {'amount': changeIntakeAmount},
-        _selectedDate,
-      );
+      await _calendarDayBloc.updateIntakeItem(intakeEntity.id, {
+        'amount': changeIntakeAmount,
+      }, _selectedDate);
       _diaryBloc.add(const LoadDiaryYearEvent());
       _calendarDayBloc.add(LoadCalendarDayEvent(_selectedDate));
       _diaryBloc.updateHomePage();
@@ -322,8 +343,7 @@ class _DiaryPageState extends State<DiaryPage> with WidgetsBindingObserver {
   ) async {
     final newDuration = await showDialog<double>(
       context: context,
-      builder: (context) =>
-          EditActivityDialog(activityEntity: activityEntity),
+      builder: (context) => EditActivityDialog(activityEntity: activityEntity),
     );
     if (newDuration != null) {
       await _calendarDayBloc.updateUserActivityItem(
@@ -351,7 +371,8 @@ class _DiaryPageState extends State<DiaryPage> with WidgetsBindingObserver {
       _focusedDate = newDate;
       _calendarDayBloc.add(LoadCalendarDayEvent(newDate));
     });
-    if (newDate.isAfter(_currentDate) && !DateUtils.isSameDay(newDate, _currentDate)) {
+    if (newDate.isAfter(_currentDate) &&
+        !DateUtils.isSameDay(newDate, _currentDate)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(S.of(context).diaryFutureDateWarning)),
       );

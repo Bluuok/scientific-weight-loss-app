@@ -4,6 +4,8 @@ part 'env.g.dart';
 
 @Envied(path: '.env')
 abstract class Env {
+  @EnviedField(varName: 'PLANNER_API_KEY', obfuscate: true, defaultValue: '')
+  static final String plannerApiKey = _Env.plannerApiKey;
   @EnviedField(varName: 'SENTRY_DNS', obfuscate: true)
   static final String sentryDns = _Env.sentryDns;
   @EnviedField(varName: 'SUPABASE_PROJECT_URL', obfuscate: true)

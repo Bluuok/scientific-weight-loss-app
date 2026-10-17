@@ -38,6 +38,7 @@ class _AddMealScreenState extends State<AddMealScreen> {
   late AddMealType _mealType;
   late DateTime _day;
 
+  late AddMealBloc _addMealBloc;
   late ProductsBloc _productsBloc;
   late FoodBloc _foodBloc;
   late RecentMealBloc _recentMealBloc;
@@ -49,6 +50,7 @@ class _AddMealScreenState extends State<AddMealScreen> {
 
   @override
   void initState() {
+    _addMealBloc = locator<AddMealBloc>()..add(InitializeAddMealEvent());
     _productsBloc = locator<ProductsBloc>();
     _foodBloc = locator<FoodBloc>();
     _recentMealBloc = locator<RecentMealBloc>();
@@ -67,6 +69,7 @@ class _AddMealScreenState extends State<AddMealScreen> {
   @override
   void dispose() {
     _searchStringListener.dispose();
+    _addMealBloc.close();
     super.dispose();
   }
 
@@ -90,7 +93,7 @@ class _AddMealScreenState extends State<AddMealScreen> {
             ),
           ),
           BlocBuilder<AddMealBloc, AddMealState>(
-            bloc: locator<AddMealBloc>()..add(InitializeAddMealEvent()),
+            bloc: _addMealBloc,
             builder: (BuildContext context, AddMealState state) {
               if (state is AddMealLoadedState) {
                 return Row(
@@ -127,6 +130,23 @@ class _AddMealScreenState extends State<AddMealScreen> {
           padding: const EdgeInsets.symmetric(horizontal: Dimens.spacing16),
           child: Column(
             children: [
+              BlocBuilder<AddMealBloc, AddMealState>(
+                bloc: _addMealBloc,
+                builder: (context, state) => state is AddMealLoadedState
+                    ? Semantics(
+                        identifier: 'add-meal-smart-entry',
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () =>
+                                _onBulkAddPressed(state.usesImperialUnits),
+                            icon: const Icon(Icons.auto_awesome),
+                            label: const Text('用文字或照片记录食物'),
+                          ),
+                        ),
+                      )
+                    : const SizedBox(),
+              ),
               const SizedBox(height: Dimens.spacing8),
               MealSearchBar(
                 searchStringListener: _searchStringListener,

@@ -71,6 +71,7 @@ class _DiaryTableCalendarState extends State<DiaryTableCalendar> {
           Dimens.spacing12,
         ),
         child: TableCalendar(
+          locale: Localizations.localeOf(context).toString(),
           headerStyle: HeaderStyle(
             titleCentered: true,
             formatButtonVisible: false,
