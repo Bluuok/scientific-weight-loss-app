@@ -31,21 +31,9 @@ for key,fdc,name,group,state in selected:
     foods.append(dict(id=key,fdc_id=fdc,name=name,group=group,state=state,
       source_description=food_rows[fdc]['description'],
       source_url=f'https://fdc.nal.usda.gov/food-details/{fdc}/nutrients',**nutrients[fdc]))
-recipes=[]
-def recipe(key,name,ingredients,simple=False,slots=None,method=None):
-    recipes.append(dict(id=key,name=name,ingredients=ingredients,simple=simple,
-      slots=slots or ['lunch','dinner'],
-      method=method or '糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。'))
-for i,fruit in enumerate(['apple','banana','orange']):
-    recipe(f'b{i}', ['苹果燕麦早餐','香蕉燕麦早餐','香橙燕麦早餐'][i],
-      dict(oats=80,milk=300,egg=60,walnut=15,**{fruit:200}),slots=['breakfast'],
-      method='燕麦按干重称量，用水煮熟；鸡蛋称去壳生重后煮熟；牛奶直接饮用。搭配所列水果和核桃，不额外加糖、油、盐。')
-for i,(protein,grams,veg) in enumerate([('chicken',150,'broccoli'),('beef',150,'cabbage'),('fish',180,'spinach'),('tofu',180,'tomato'),('egg',150,'mushroom')]):
-    recipe(f's{i}', ['鸡胸西兰花简洁餐','瘦牛肉卷心菜简洁餐','清蒸鳕鱼菠菜简洁餐','豆腐番茄简洁餐','鸡蛋蘑菇简洁餐'][i],
-      dict(rice=90,oil=10,salt=1,lettuce=100,**{protein:grams,veg:200}),simple=True)
-for i,(protein,grams,veg,fruit) in enumerate([('chicken',130,'carrot','orange'),('fish',180,'tomato','apple'),('tofu',180,'cabbage','pear'),('beef',130,'broccoli','banana'),('egg',120,'mushroom','apple')]):
-    recipe(f'd{i}', ['鸡肉糙米蔬菜餐','鳕鱼番茄糙米餐','豆腐卷心菜糙米餐','牛肉西兰花糙米餐','鸡蛋蘑菇糙米餐'][i],
-      dict(rice=100,oil=12,salt=1,cucumber=150,**{protein:grams,veg:150,fruit:150}))
+# Keep recipe additions reproducible without changing historical IDs/weights.
+recipes=json.loads(pathlib.Path(__file__).with_name('recipe_definitions.json').read_text(encoding='utf-8'))
+
 data=dict(version='USDA-SR-Legacy-2018-local-v1',basis='per 100g edible portion; sodium mg, other nutrients g except kcal',
   download_url='https://fdc.nal.usda.gov/fdc-datasets/FoodData_Central_sr_legacy_food_csv_2018-04.zip',
   archive_sha256=hashlib.sha256((root/'.local/usda.zip').read_bytes()).hexdigest(),foods=foods,recipes=recipes)

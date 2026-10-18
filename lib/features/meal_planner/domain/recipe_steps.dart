@@ -48,6 +48,20 @@ class RecipeSteps {
       } else if (ingredients.containsKey('egg')) {
         steps.add('${item('egg')}打散加少量水，取本餐油的一半抹碗后蒸成全熟蛋羹，不吃生蛋或溏心蛋。');
       }
+      if (ingredients.containsKey('tofu') && ingredients.containsKey('egg')) {
+        steps.add('${item('egg')}单独蒸成全熟蛋羹，蛋液彻底凝固后再与豆腐搭配，不吃溏心蛋。');
+      }
+      // These ingredients are neither the primary meat nor vegetables; they
+      // still need explicit weighed preparation instructions.
+      if (ingredients.containsKey('soybean')) {
+        steps.add('${item('soybean')}为去荚毛豆仁，按生重称好，水煮至完全熟透后再食用；牙口差可略压碎。');
+      }
+      if (ingredients.containsKey('potato')) {
+        steps.add('${item('potato')}按可食部生重称量，切小块后彻底煮熟；发绿、发芽或有苦味的土豆不要使用。');
+      }
+      if (ingredients.containsKey('sweet_potato')) {
+        steps.add('${item('sweet_potato')}按可食部生重称量，切小块后蒸熟至软，不额外加糖或油。');
+      }
       final vegetables = ingredients.keys
           .where((id) => catalog.foods[id]!['group'] == 'vegetable')
           .cast<String>()
@@ -64,6 +78,10 @@ class RecipeSteps {
         .cast<String>();
     for (final id in fruits) {
       steps.add('${item(id)}按清单可食部取量，清洗、去核或去皮，切成易咀嚼的小块；牙口差可蒸软，不加糖。');
+    }
+    final tip = catalog.recipes[recipeId]?['flavor_tip'];
+    if (tip is String && tip.trim().isNotEmpty) {
+      steps.add('家常口感建议：$tip 所有做法仅使用清单中已有食材与称好的油盐。');
     }
     steps.add(
       '生熟分开操作；肉类做熟后尽快食用。上述步骤不指定固定蒸煮分钟数，以食材厚度、软熟程度和中心温度判断。吞咽困难需专门评估，不能仅靠切碎或煮软。',
