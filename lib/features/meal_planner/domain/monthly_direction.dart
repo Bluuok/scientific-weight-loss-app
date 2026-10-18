@@ -25,8 +25,8 @@ class MonthlyDirection {
       : day <= 21
       ? 3
       : 4;
-  /// Observed measurements only. No projection, diagnosis, or automatic
-  /// calorie escalation is justified by a few scale readings.
+  /// Observed measurements only; never extrapolate or change calories
+  /// from a few scale readings.
   static Json _weightEvidence(
     List<Json> measurements,
     String cycleStart,
@@ -37,7 +37,39 @@ class MonthlyDirection {
       final date = item['date'];
       final kg = item['kg'];
       if (date is! String ||
-          !RegExp(r'^\\d{4}-\\d{2}-\\d{2}
+          !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(date) ||
+          date.compareTo(cycleStart) < 0 ||
+          date.compareTo(weekStart) > 0 ||
+          kg is! num ||
+          !kg.isFinite ||
+          kg <= 0) {
+        continue;
+      }
+      try {
+        if (localDay(DateTime.parse(date)) != date) continue;
+        byDay[date] = kg.toDouble();
+      } catch (_) {
+        continue;
+      }
+    }
+    final dates = byDay.keys.toList()..sort();
+    final span = dates.length < 2 ? 0 : _days(dates.first, dates.last);
+    final enough = dates.length >= 3 && span >= 7;
+    final first = enough ? byDay[dates.first]! : null;
+    final last = enough ? byDay[dates.last]! : null;
+    return {
+      'status': enough ? 'observed_only' : 'insufficient_data',
+      'recorded_days': dates.length,
+      'observation_span_days': span,
+      'observed_change_kg': enough ? last! - first! : null,
+      'observed_change_pct': enough ? (last! - first!) / first! * 100 : null,
+      'interpretation':
+          'This is only a difference between recorded weigh-ins. Daily fluctuation is not fat loss. '
+          'Never infer muscle change or alter calories automatically. Missing data stays unknown.',
+    };
+  }
+
+  static Json build({
     required String monthStart,
     required String weekStart,
     required double initialWeightKg,
@@ -93,89 +125,6 @@ class MonthlyDirection {
           {
             'date': nextDay(weekStart, i),
             'focus': focuses[phaseForDay((elapsed + i) % 30 + 1) - 1],
-          },
-      ],
-      'continuity':
-          'Use recorded meals to rotate main protein and improve practicality; unknown intake is not a deficiency. '
-          'Do not compensate yesterday with excess nutrients or fasting today. Missing weight history stays unknown.',
-    };
-  }
-}
-).hasMatch(date) ||
-          date.compareTo(cycleStart) < 0 ||
-          date.compareTo(weekStart) > 0 ||
-          kg is! num ||
-          !kg.isFinite ||
-          kg <= 0) {
-        continue;
-      }
-      try {
-        if (localDay(DateTime.parse(date)) != date) continue;
-        byDay[date] = kg.toDouble();
-      } catch (_) {
-        continue;
-      }
-    }
-    final dates = byDay.keys.toList()..sort();
-    final span = dates.length < 2 ? 0 : _days(dates.first, dates.last);
-    final enough = dates.length >= 3 && span >= 7;
-    final first = enough ? byDay[dates.first]! : null;
-    final last = enough ? byDay[dates.last]! : null;
-    return {
-      'status': enough ? 'observed_only' : 'insufficient_data',
-      'recorded_days': dates.length,
-      'observation_span_days': span,
-      'observed_change_kg': enough ? last! - first! : null,
-      'observed_change_pct': enough ? (last! - first!) / first! * 100 : null,
-      'interpretation':
-          'Only a descriptive difference between recorded weigh-ins; daily fluctuations are not fat loss. '
-          'Do not infer muscle change or alter calories automatically. Missing data means unknown.',
-    };
-  }
-
-  static Json build({
-    required String monthStart,
-    required String weekStart,
-    required double initialWeightKg,
-    required double currentWeightKg,
-    required double heightCm,
-    required double targetKcal,
-    required double minimumProtein,
-    double? longTermGoalKg,
-  }) {
-    final day = (_days(monthStart, weekStart) + 1).clamp(1, 1000000).toInt();
-    final phase = phaseForDay(day);
-    return {
-      'version': version,
-      'start_date': monthStart,
-      'first_month_end': nextDay(monthStart, 29),
-      'horizon_days': 30,
-      'weekly_window_days': 7,
-      'program_day': day,
-      'phase': phase,
-      'focus': focuses[phase - 1],
-      'reference_goal_kg': initialWeightKg * .95,
-      'long_term_goal_kg': longTermGoalKg,
-      'goal_deadline': 'none; 5% is a gradual stage goal, not a 30-day promise',
-      'current_bmi': currentWeightKg / (heightCm / 100) / (heightCm / 100),
-      'target_kcal': targetKcal,
-      'minimum_protein_g': minimumProtein,
-      'daily_invariants': [
-        'three meals',
-        'one simple meal',
-        'whole grains, vegetables, fruit, dairy and protein each day',
-        'sodium <= 2000mg',
-        'cooking oil <= 30g',
-        'no fasting or compensatory restriction',
-      ],
-      'phase_outline': [
-        for (var i = 0; i < 4; i++) {'phase': i + 1, 'focus': focuses[i]},
-      ],
-      'day_focus': [
-        for (var i = 0; i < 7; i++)
-          {
-            'date': nextDay(weekStart, i),
-            'focus': focuses[phaseForDay(day + i) - 1],
           },
       ],
       'continuity':
