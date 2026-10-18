@@ -13,11 +13,11 @@
       "source_description": "Oats (Includes foods for USDA's Food Distribution Program)",
       "source_url": "https://fdc.nal.usda.gov/food-details/169705/nutrients",
       "fiber": 10.6,
-      "sodium": 2.0,
+      "sodium": 2,
       "protein": 16.89,
       "fat": 6.9,
       "carbs": 66.27,
-      "kcal": 389.0
+      "kcal": 389
     },
     {
       "id": "rice",
@@ -29,9 +29,9 @@
       "source_url": "https://fdc.nal.usda.gov/food-details/169703/nutrients",
       "fat": 3.2,
       "carbs": 76.25,
-      "kcal": 367.0,
+      "kcal": 367,
       "fiber": 3.6,
-      "sodium": 5.0,
+      "sodium": 5,
       "protein": 7.54
     },
     {
@@ -42,12 +42,12 @@
       "state": "即饮重量",
       "source_description": "Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D",
       "source_url": "https://fdc.nal.usda.gov/food-details/170872/nutrients",
-      "sodium": 44.0,
+      "sodium": 44,
       "protein": 3.37,
       "fat": 0.97,
       "carbs": 4.99,
-      "kcal": 42.0,
-      "fiber": 0.0
+      "kcal": 42,
+      "fiber": 0
     },
     {
       "id": "egg",
@@ -57,12 +57,12 @@
       "state": "去壳生重",
       "source_description": "Egg, whole, raw, fresh",
       "source_url": "https://fdc.nal.usda.gov/food-details/171287/nutrients",
-      "kcal": 143.0,
+      "kcal": 143,
       "protein": 12.56,
-      "sodium": 142.0,
+      "sodium": 142,
       "fat": 9.51,
       "carbs": 0.72,
-      "fiber": 0.0
+      "fiber": 0
     },
     {
       "id": "chicken",
@@ -73,11 +73,11 @@
       "source_description": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw",
       "source_url": "https://fdc.nal.usda.gov/food-details/171077/nutrients",
       "fat": 2.62,
-      "kcal": 120.0,
-      "sodium": 45.0,
+      "kcal": 120,
+      "sodium": 45,
       "protein": 22.5,
-      "carbs": 0.0,
-      "fiber": 0.0
+      "carbs": 0,
+      "fiber": 0
     },
     {
       "id": "beef",
@@ -88,11 +88,11 @@
       "source_description": "Beef, ground, 95% lean meat / 5% fat, raw",
       "source_url": "https://fdc.nal.usda.gov/food-details/171790/nutrients",
       "protein": 21.41,
-      "fiber": 0.0,
-      "sodium": 66.0,
-      "fat": 5.0,
-      "carbs": 0.0,
-      "kcal": 137.0
+      "fiber": 0,
+      "sodium": 66,
+      "fat": 5,
+      "carbs": 0,
+      "kcal": 137
     },
     {
       "id": "fish",
@@ -102,12 +102,12 @@
       "state": "生重",
       "source_description": "Fish, cod, Atlantic, raw",
       "source_url": "https://fdc.nal.usda.gov/food-details/171955/nutrients",
-      "kcal": 82.0,
-      "fiber": 0.0,
-      "sodium": 54.0,
+      "kcal": 82,
+      "fiber": 0,
+      "sodium": 54,
       "protein": 17.81,
       "fat": 0.67,
-      "carbs": 0.0
+      "carbs": 0
     },
     {
       "id": "tofu",
@@ -119,9 +119,9 @@
       "source_url": "https://fdc.nal.usda.gov/food-details/172475/nutrients",
       "fiber": 2.3,
       "carbs": 2.78,
-      "kcal": 144.0,
+      "kcal": 144,
       "protein": 17.27,
-      "sodium": 14.0,
+      "sodium": 14,
       "fat": 8.72
     },
     {
@@ -133,11 +133,11 @@
       "source_description": "Broccoli, raw",
       "source_url": "https://fdc.nal.usda.gov/food-details/170379/nutrients",
       "carbs": 6.64,
-      "kcal": 34.0,
+      "kcal": 34,
       "fat": 0.37,
       "protein": 2.82,
       "fiber": 2.6,
-      "sodium": 33.0
+      "sodium": 33
     },
     {
       "id": "lettuce",
@@ -149,9 +149,9 @@
       "source_url": "https://fdc.nal.usda.gov/food-details/169249/nutrients",
       "fiber": 1.3,
       "carbs": 2.87,
-      "kcal": 15.0,
+      "kcal": 15,
       "protein": 1.36,
-      "sodium": 28.0,
+      "sodium": 28,
       "fat": 0.15
     },
     {
@@ -162,11 +162,11 @@
       "state": "生重",
       "source_description": "Carrots, raw",
       "source_url": "https://fdc.nal.usda.gov/food-details/170393/nutrients",
-      "sodium": 69.0,
+      "sodium": 69,
       "protein": 0.93,
       "fat": 0.24,
       "carbs": 9.58,
-      "kcal": 41.0,
+      "kcal": 41,
       "fiber": 2.8
     },
     {
@@ -179,10 +179,10 @@
       "source_url": "https://fdc.nal.usda.gov/food-details/169975/nutrients",
       "fat": 0.1,
       "carbs": 5.8,
-      "kcal": 25.0,
+      "kcal": 25,
       "protein": 1.28,
       "fiber": 2.5,
-      "sodium": 18.0
+      "sodium": 18
     },
     {
       "id": "tomato",
@@ -193,10 +193,10 @@
       "source_description": "Tomatoes, red, ripe, raw, year round average",
       "source_url": "https://fdc.nal.usda.gov/food-details/170457/nutrients",
       "carbs": 3.89,
-      "kcal": 18.0,
+      "kcal": 18,
       "fat": 0.2,
       "fiber": 1.2,
-      "sodium": 5.0,
+      "sodium": 5,
       "protein": 0.88
     },
     {
@@ -208,8 +208,8 @@
       "source_description": "Cucumber, with peel, raw",
       "source_url": "https://fdc.nal.usda.gov/food-details/168409/nutrients",
       "carbs": 3.63,
-      "kcal": 15.0,
-      "sodium": 2.0,
+      "kcal": 15,
+      "sodium": 2,
       "fat": 0.11,
       "fiber": 0.5,
       "protein": 0.65
@@ -223,11 +223,11 @@
       "source_description": "Spinach, raw",
       "source_url": "https://fdc.nal.usda.gov/food-details/168462/nutrients",
       "protein": 2.86,
-      "sodium": 79.0,
+      "sodium": 79,
       "fiber": 2.2,
       "fat": 0.39,
       "carbs": 3.63,
-      "kcal": 23.0
+      "kcal": 23
     },
     {
       "id": "mushroom",
@@ -237,12 +237,12 @@
       "state": "生重",
       "source_description": "Mushrooms, white, raw",
       "source_url": "https://fdc.nal.usda.gov/food-details/169251/nutrients",
-      "fiber": 1.0,
+      "fiber": 1,
       "fat": 0.34,
-      "sodium": 5.0,
+      "sodium": 5,
       "protein": 3.09,
       "carbs": 3.26,
-      "kcal": 22.0
+      "kcal": 22
     },
     {
       "id": "apple",
@@ -253,10 +253,10 @@
       "source_description": "Apples, raw, with skin (Includes foods for USDA's Food Distribution Program)",
       "source_url": "https://fdc.nal.usda.gov/food-details/171688/nutrients",
       "carbs": 13.81,
-      "kcal": 52.0,
+      "kcal": 52,
       "fat": 0.17,
       "fiber": 2.4,
-      "sodium": 1.0,
+      "sodium": 1,
       "protein": 0.26
     },
     {
@@ -268,9 +268,9 @@
       "source_description": "Bananas, raw",
       "source_url": "https://fdc.nal.usda.gov/food-details/173944/nutrients",
       "carbs": 22.84,
-      "kcal": 89.0,
+      "kcal": 89,
       "fiber": 2.6,
-      "sodium": 1.0,
+      "sodium": 1,
       "protein": 1.09,
       "fat": 0.33
     },
@@ -284,9 +284,9 @@
       "source_url": "https://fdc.nal.usda.gov/food-details/169097/nutrients",
       "fat": 0.12,
       "carbs": 11.75,
-      "kcal": 47.0,
+      "kcal": 47,
       "fiber": 2.4,
-      "sodium": 0.0,
+      "sodium": 0,
       "protein": 0.94
     },
     {
@@ -299,10 +299,10 @@
       "source_url": "https://fdc.nal.usda.gov/food-details/169118/nutrients",
       "fat": 0.14,
       "carbs": 15.23,
-      "kcal": 57.0,
+      "kcal": 57,
       "protein": 0.36,
       "fiber": 3.1,
-      "sodium": 1.0
+      "sodium": 1
     },
     {
       "id": "potato",
@@ -313,8 +313,8 @@
       "source_description": "Potatoes, flesh and skin, raw",
       "source_url": "https://fdc.nal.usda.gov/food-details/170026/nutrients",
       "fat": 0.09,
-      "kcal": 77.0,
-      "sodium": 6.0,
+      "kcal": 77,
+      "sodium": 6,
       "protein": 2.05,
       "fiber": 2.1,
       "carbs": 17.49
@@ -327,10 +327,10 @@
       "state": "生重",
       "source_description": "Sweet potato, raw, unprepared (Includes foods for USDA's Food Distribution Program)",
       "source_url": "https://fdc.nal.usda.gov/food-details/168482/nutrients",
-      "fiber": 3.0,
+      "fiber": 3,
       "carbs": 20.12,
-      "kcal": 86.0,
-      "sodium": 55.0,
+      "kcal": 86,
+      "sodium": 55,
       "fat": 0.05,
       "protein": 1.57
     },
@@ -343,10 +343,10 @@
       "source_description": "Nuts, walnuts, english",
       "source_url": "https://fdc.nal.usda.gov/food-details/170187/nutrients",
       "carbs": 13.71,
-      "kcal": 654.0,
+      "kcal": 654,
       "protein": 15.23,
       "fiber": 6.7,
-      "sodium": 2.0,
+      "sodium": 2,
       "fat": 65.21
     },
     {
@@ -357,12 +357,12 @@
       "state": "实际用量",
       "source_description": "Oil, olive, salad or cooking",
       "source_url": "https://fdc.nal.usda.gov/food-details/171413/nutrients",
-      "fat": 100.0,
-      "carbs": 0.0,
-      "kcal": 884.0,
-      "sodium": 2.0,
-      "protein": 0.0,
-      "fiber": 0.0
+      "fat": 100,
+      "carbs": 0,
+      "kcal": 884,
+      "sodium": 2,
+      "protein": 0,
+      "fiber": 0
     },
     {
       "id": "salt",
@@ -372,12 +372,12 @@
       "state": "实际用量",
       "source_description": "Salt, table",
       "source_url": "https://fdc.nal.usda.gov/food-details/173468/nutrients",
-      "fiber": 0.0,
-      "sodium": 38758.0,
-      "protein": 0.0,
-      "fat": 0.0,
-      "carbs": 0.0,
-      "kcal": 0.0
+      "fiber": 0,
+      "sodium": 38758,
+      "protein": 0,
+      "fat": 0,
+      "carbs": 0,
+      "kcal": 0
     },
     {
       "id": "soybean",
@@ -388,10 +388,10 @@
       "source_description": "Soybeans, green, raw",
       "source_url": "https://fdc.nal.usda.gov/food-details/169282/nutrients",
       "carbs": 11.05,
-      "kcal": 147.0,
+      "kcal": 147,
       "protein": 12.95,
       "fiber": 4.2,
-      "sodium": 15.0,
+      "sodium": 15,
       "fat": 6.8
     }
   ],
@@ -410,7 +410,8 @@
       "slots": [
         "breakfast"
       ],
-      "method": "燕麦按干重称量，用水煮熟；鸡蛋称去壳生重后煮熟；牛奶直接饮用。搭配所列水果和核桃，不额外加糖、油、盐。"
+      "method": "燕麦按干重称量，用水煮熟；鸡蛋称去壳生重后煮熟；牛奶直接饮用。搭配所列水果和核桃，不额外加糖、油、盐。",
+      "budget_tier": "everyday"
     },
     {
       "id": "b1",
@@ -426,7 +427,8 @@
       "slots": [
         "breakfast"
       ],
-      "method": "燕麦按干重称量，用水煮熟；鸡蛋称去壳生重后煮熟；牛奶直接饮用。搭配所列水果和核桃，不额外加糖、油、盐。"
+      "method": "燕麦按干重称量，用水煮熟；鸡蛋称去壳生重后煮熟；牛奶直接饮用。搭配所列水果和核桃，不额外加糖、油、盐。",
+      "budget_tier": "everyday"
     },
     {
       "id": "b2",
@@ -442,7 +444,8 @@
       "slots": [
         "breakfast"
       ],
-      "method": "燕麦按干重称量，用水煮熟；鸡蛋称去壳生重后煮熟；牛奶直接饮用。搭配所列水果和核桃，不额外加糖、油、盐。"
+      "method": "燕麦按干重称量，用水煮熟；鸡蛋称去壳生重后煮熟；牛奶直接饮用。搭配所列水果和核桃，不额外加糖、油、盐。",
+      "budget_tier": "everyday"
     },
     {
       "id": "s0",
@@ -460,7 +463,8 @@
         "lunch",
         "dinner"
       ],
-      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。"
+      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。",
+      "budget_tier": "everyday"
     },
     {
       "id": "s1",
@@ -478,7 +482,8 @@
         "lunch",
         "dinner"
       ],
-      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。"
+      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。",
+      "budget_tier": "occasional"
     },
     {
       "id": "s2",
@@ -496,7 +501,8 @@
         "lunch",
         "dinner"
       ],
-      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。"
+      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。",
+      "budget_tier": "occasional"
     },
     {
       "id": "s3",
@@ -514,7 +520,8 @@
         "lunch",
         "dinner"
       ],
-      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。"
+      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。",
+      "budget_tier": "everyday"
     },
     {
       "id": "s4",
@@ -532,7 +539,8 @@
         "lunch",
         "dinner"
       ],
-      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。"
+      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。",
+      "budget_tier": "everyday"
     },
     {
       "id": "d0",
@@ -551,7 +559,8 @@
         "lunch",
         "dinner"
       ],
-      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。"
+      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。",
+      "budget_tier": "everyday"
     },
     {
       "id": "d1",
@@ -570,7 +579,8 @@
         "lunch",
         "dinner"
       ],
-      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。"
+      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。",
+      "budget_tier": "occasional"
     },
     {
       "id": "d2",
@@ -589,7 +599,8 @@
         "lunch",
         "dinner"
       ],
-      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。"
+      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。",
+      "budget_tier": "everyday"
     },
     {
       "id": "d3",
@@ -608,7 +619,8 @@
         "lunch",
         "dinner"
       ],
-      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。"
+      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。",
+      "budget_tier": "occasional"
     },
     {
       "id": "d4",
@@ -627,7 +639,332 @@
         "lunch",
         "dinner"
       ],
-      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。"
+      "method": "糙米按干重称量后煮熟；肉和蔬菜称生重。肉类彻底蒸熟或煮熟，蔬菜焯熟；全部食用油、盐按所列重量加入，不另加酱料。水果直接食用。",
+      "budget_tier": "everyday"
+    },
+    {
+      "id": "b3",
+      "name": "梨香燕麦早餐",
+      "ingredients": {
+        "oats": 80,
+        "milk": 300,
+        "egg": 60,
+        "walnut": 15,
+        "pear": 200
+      },
+      "simple": false,
+      "slots": [
+        "breakfast"
+      ],
+      "method": "所有食材按清单生重或干重称量；主食煮软，肉蛋豆彻底做熟，蔬菜煮软；严格只使用列明的油盐，不额外添加含钠酱料。",
+      "budget_tier": "everyday",
+      "flavor_tip": "将梨切成小块，与煮软的燕麦搭配；核桃碾碎拌匀，不加糖。"
+    },
+    {
+      "id": "s5",
+      "name": "番茄鸡胸卷心菜糙米饭",
+      "ingredients": {
+        "rice": 90,
+        "oil": 10,
+        "salt": 1,
+        "chicken": 150,
+        "cabbage": 150,
+        "tomato": 150,
+        "lettuce": 100
+      },
+      "simple": true,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "所有食材按清单生重或干重称量；主食煮软，肉蛋豆彻底做熟，蔬菜煮软；严格只使用列明的油盐，不额外添加含钠酱料。",
+      "budget_tier": "everyday",
+      "flavor_tip": "番茄煮软出汁，拌在切碎的熟鸡肉和糙米上；卷心菜煮软。"
+    },
+    {
+      "id": "s6",
+      "name": "胡萝卜鸡蛋豆腐糙米饭",
+      "ingredients": {
+        "rice": 90,
+        "oil": 10,
+        "salt": 1,
+        "egg": 90,
+        "tofu": 120,
+        "carrot": 150,
+        "cabbage": 150,
+        "lettuce": 100
+      },
+      "simple": true,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "所有食材按清单生重或干重称量；主食煮软，肉蛋豆彻底做熟，蔬菜煮软；严格只使用列明的油盐，不额外添加含钠酱料。",
+      "budget_tier": "everyday",
+      "flavor_tip": "胡萝卜切细蒸软，豆腐与全熟鸡蛋同食，口味温和易嚼。"
+    },
+    {
+      "id": "s7",
+      "name": "菠菜毛豆豆腐糙米饭",
+      "ingredients": {
+        "rice": 90,
+        "oil": 10,
+        "salt": 1,
+        "soybean": 140,
+        "tofu": 110,
+        "spinach": 200,
+        "tomato": 100,
+        "lettuce": 100
+      },
+      "simple": true,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "所有食材按清单生重或干重称量；主食煮软，肉蛋豆彻底做熟，蔬菜煮软；严格只使用列明的油盐，不额外添加含钠酱料。",
+      "budget_tier": "everyday",
+      "flavor_tip": "毛豆仁彻底煮熟后略压碎，与软豆腐和菠菜搭配；番茄煮出汁提鲜。"
+    },
+    {
+      "id": "s8",
+      "name": "清香鸡肉蘑菇糙米饭",
+      "ingredients": {
+        "rice": 90,
+        "oil": 10,
+        "salt": 1,
+        "chicken": 160,
+        "mushroom": 150,
+        "broccoli": 150,
+        "lettuce": 100
+      },
+      "simple": true,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "所有食材按清单生重或干重称量；主食煮软，肉蛋豆彻底做熟，蔬菜煮软；严格只使用列明的油盐，不额外添加含钠酱料。",
+      "budget_tier": "everyday",
+      "flavor_tip": "蘑菇和西兰花煮软，与切小块的熟鸡肉搭配；不另加酱汁。"
+    },
+    {
+      "id": "s9",
+      "name": "番茄鸡蛋毛豆糙米饭",
+      "ingredients": {
+        "rice": 90,
+        "oil": 10,
+        "salt": 1,
+        "egg": 100,
+        "soybean": 130,
+        "tomato": 150,
+        "cabbage": 150,
+        "lettuce": 100
+      },
+      "simple": true,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "所有食材按清单生重或干重称量；主食煮软，肉蛋豆彻底做熟，蔬菜煮软；严格只使用列明的油盐，不额外添加含钠酱料。",
+      "budget_tier": "everyday",
+      "flavor_tip": "番茄煮出汁，配全熟鸡蛋羹与煮透的毛豆仁；卷心菜切丝煮软。"
+    },
+    {
+      "id": "s10",
+      "name": "土豆豆腐西兰花糙米饭",
+      "ingredients": {
+        "rice": 70,
+        "potato": 150,
+        "oil": 10,
+        "salt": 1,
+        "tofu": 160,
+        "broccoli": 200,
+        "cabbage": 100,
+        "lettuce": 100
+      },
+      "simple": true,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "所有食材按清单生重或干重称量；主食煮软，肉蛋豆彻底做熟，蔬菜煮软；严格只使用列明的油盐，不额外添加含钠酱料。",
+      "budget_tier": "everyday",
+      "flavor_tip": "土豆去芽并彻底煮熟，豆腐与西兰花蒸软，糙米减量以照顾双主食搭配。"
+    },
+    {
+      "id": "s11",
+      "name": "胡萝卜牛肉西兰花糙米饭",
+      "ingredients": {
+        "rice": 90,
+        "oil": 10,
+        "salt": 1,
+        "beef": 140,
+        "carrot": 180,
+        "broccoli": 120,
+        "lettuce": 100
+      },
+      "simple": true,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "所有食材按清单生重或干重称量；主食煮软，肉蛋豆彻底做熟，蔬菜煮软；严格只使用列明的油盐，不额外添加含钠酱料。",
+      "budget_tier": "occasional",
+      "flavor_tip": "瘦牛肉糜压成薄饼蒸熟；胡萝卜与西兰花煮软，不用额外酱料。"
+    },
+    {
+      "id": "d5",
+      "name": "家常番茄鸡肉蔬菜饭",
+      "ingredients": {
+        "rice": 100,
+        "oil": 12,
+        "salt": 1,
+        "chicken": 150,
+        "tomato": 160,
+        "cabbage": 150,
+        "carrot": 70,
+        "orange": 150
+      },
+      "simple": false,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "所有食材按清单生重或干重称量；主食煮软，肉蛋豆彻底做熟，蔬菜煮软；严格只使用列明的油盐，不额外添加含钠酱料。",
+      "budget_tier": "everyday",
+      "flavor_tip": "番茄煮软出汁拌鸡肉，卷心菜和胡萝卜蒸软，橙子作为餐后水果。"
+    },
+    {
+      "id": "d6",
+      "name": "豆腐蘑菇卷心菜糙米饭",
+      "ingredients": {
+        "rice": 100,
+        "oil": 12,
+        "salt": 1,
+        "tofu": 180,
+        "mushroom": 150,
+        "cabbage": 150,
+        "cucumber": 100,
+        "pear": 150
+      },
+      "simple": false,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "所有食材按清单生重或干重称量；主食煮软，肉蛋豆彻底做熟，蔬菜煮软；严格只使用列明的油盐，不额外添加含钠酱料。",
+      "budget_tier": "everyday",
+      "flavor_tip": "蘑菇与豆腐加水炖软，保留食材本身鲜味；黄瓜蒸熟便于咀嚼。"
+    },
+    {
+      "id": "d7",
+      "name": "毛豆鸡蛋胡萝卜蔬菜饭",
+      "ingredients": {
+        "rice": 100,
+        "oil": 12,
+        "salt": 1,
+        "soybean": 130,
+        "egg": 100,
+        "carrot": 150,
+        "cabbage": 150,
+        "apple": 150
+      },
+      "simple": false,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "所有食材按清单生重或干重称量；主食煮软，肉蛋豆彻底做熟，蔬菜煮软；严格只使用列明的油盐，不额外添加含钠酱料。",
+      "budget_tier": "everyday",
+      "flavor_tip": "毛豆煮透，鸡蛋蒸全熟，胡萝卜切细与卷心菜炖软；苹果切小块。"
+    },
+    {
+      "id": "d8",
+      "name": "鸡胸土豆番茄双主食饭",
+      "ingredients": {
+        "rice": 80,
+        "potato": 180,
+        "oil": 12,
+        "salt": 1,
+        "chicken": 150,
+        "tomato": 160,
+        "lettuce": 100,
+        "cucumber": 100,
+        "banana": 150
+      },
+      "simple": false,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "所有食材按清单生重或干重称量；主食煮软，肉蛋豆彻底做熟，蔬菜煮软；严格只使用列明的油盐，不额外添加含钠酱料。",
+      "budget_tier": "everyday",
+      "flavor_tip": "减少糙米干重并加入煮熟土豆，番茄出汁与熟鸡肉搭配。"
+    },
+    {
+      "id": "d9",
+      "name": "红薯鸡肉卷心菜糙米饭",
+      "ingredients": {
+        "rice": 75,
+        "sweet_potato": 140,
+        "oil": 12,
+        "salt": 1,
+        "chicken": 160,
+        "cabbage": 220,
+        "cucumber": 100,
+        "apple": 150
+      },
+      "simple": false,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "所有食材按清单生重或干重称量；主食煮软，肉蛋豆彻底做熟，蔬菜煮软；严格只使用列明的油盐，不额外添加含钠酱料。",
+      "budget_tier": "everyday",
+      "flavor_tip": "红薯蒸软，米饭适量减少；卷心菜和鸡肉分别做熟后搭配。"
+    },
+    {
+      "id": "d10",
+      "name": "毛豆豆腐菠菜家常饭",
+      "ingredients": {
+        "rice": 100,
+        "oil": 12,
+        "salt": 1,
+        "soybean": 120,
+        "tofu": 140,
+        "spinach": 180,
+        "carrot": 150,
+        "apple": 150
+      },
+      "simple": false,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "所有食材按清单生重或干重称量；主食煮软，肉蛋豆彻底做熟，蔬菜煮软；严格只使用列明的油盐，不额外添加含钠酱料。",
+      "budget_tier": "everyday",
+      "flavor_tip": "毛豆彻底煮熟并略压碎，菠菜焯熟后配豆腐炖软；胡萝卜切细。"
+    },
+    {
+      "id": "d11",
+      "name": "番茄牛肉蘑菇糙米饭",
+      "ingredients": {
+        "rice": 100,
+        "oil": 12,
+        "salt": 1,
+        "beef": 130,
+        "mushroom": 160,
+        "tomato": 180,
+        "cucumber": 100,
+        "pear": 150
+      },
+      "simple": false,
+      "slots": [
+        "lunch",
+        "dinner"
+      ],
+      "method": "所有食材按清单生重或干重称量；主食煮软，肉蛋豆彻底做熟，蔬菜煮软；严格只使用列明的油盐，不额外添加含钠酱料。",
+      "budget_tier": "occasional",
+      "flavor_tip": "番茄与蘑菇煮出汁，浇在蒸熟的瘦牛肉饼和糙米上。"
     }
   ]
 }
