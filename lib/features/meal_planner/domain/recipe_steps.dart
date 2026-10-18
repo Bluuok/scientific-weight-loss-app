@@ -48,6 +48,9 @@ class RecipeSteps {
       } else if (ingredients.containsKey('egg')) {
         steps.add('${item('egg')}打散加少量水，取本餐油的一半抹碗后蒸成全熟蛋羹，不吃生蛋或溏心蛋。');
       }
+      if (ingredients.containsKey('tofu') && ingredients.containsKey('egg')) {
+        steps.add('${item('egg')}单独蒸成全熟蛋羹，蛋液彻底凝固后再与豆腐搭配，不吃溏心蛋。');
+      }
       // These ingredients are neither the primary meat nor vegetables; they
       // still need explicit weighed preparation instructions.
       if (ingredients.containsKey('soybean')) {
