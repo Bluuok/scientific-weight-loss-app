@@ -39,6 +39,7 @@ class OnboardingBodyMeasurementsPageBody extends StatefulWidget {
   /// convention as [initialWeightKg].
   final double? initialTargetWeightKg;
 
+  final bool olderAdult;
   final bool initialHeightImperial;
   final BodyWeightUnit initialBodyWeightUnit;
   final bool initialFoodImperial;
@@ -52,6 +53,7 @@ class OnboardingBodyMeasurementsPageBody extends StatefulWidget {
   const OnboardingBodyMeasurementsPageBody({
     super.key,
     required this.setButtonContent,
+    this.olderAdult = false,
     this.initialHeightCm,
     this.initialWeightKg,
     this.initialTargetWeightKg,
@@ -378,6 +380,16 @@ class _OnboardingBodyMeasurementsPageBodyState
   /// comes from stated next to it. Shown only once height and weight both
   /// parse, since the suggestion depends on both.
   Widget _buildHealthyRangeCard() {
+    if (widget.olderAdult) {
+      return Container(
+        key: _healthyRangeKey,
+        padding: const EdgeInsets.all(12),
+        child: const Text(
+          '老年人的目标体重需结合血压、营养和肌力评估，不直接套用年轻成人的体重范围。目标可以先留空，由医生或营养师确认后再填。',
+          style: TextStyle(fontSize: 18, height: 1.5),
+        ),
+      );
+    }
     final heightCm = _parsedHeight!;
     final weightKg = _parsedWeight!;
     final range = HealthyWeightRange.forHeightCm(heightCm);

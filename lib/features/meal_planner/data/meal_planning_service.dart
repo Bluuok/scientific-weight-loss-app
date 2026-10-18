@@ -186,6 +186,23 @@ class MealPlanningService {
         'role': 'user',
         'content': jsonEncode({
           ...input,
+          'constraints': {
+            ...Map<String, dynamic>.from(input['constraints'] ?? {}),
+            'target_kcal': rules.targetKcal,
+            'energy_min_kcal': rules.minimumKcal,
+            'energy_max_kcal': rules.maximumKcal,
+            'planning_aim_kcal': rules.planningKcal,
+            'minimum_protein_g': rules.minimumProtein,
+            'maximum_protein_g': 150,
+            'sodium_mg_max': 2000,
+            'cooking_oil_g_max': 30,
+            'food_group_minimum_g': {
+              'vegetable': 400,
+              'fruit': 200,
+              'grain': 100,
+              'dairy': 200,
+            },
+          },
           'example': example,
           'historical_locked_meals': preservedMeals,
           'allowed_recipes': rules.catalog.recipes.values

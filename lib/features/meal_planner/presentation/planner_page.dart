@@ -8,6 +8,7 @@ import 'package:opennutritracker/features/add_meal/presentation/add_meal_screen.
 import 'package:opennutritracker/features/add_meal/presentation/add_meal_type.dart';
 import '../data/planner_repository.dart';
 import '../domain/planner.dart';
+import '../domain/recipe_steps.dart';
 import '../domain/weight_loss_eligibility.dart';
 import 'planner_text.dart';
 
@@ -51,10 +52,16 @@ class _PlannerPageState extends State<PlannerPage> {
   bool ready = false, busy = false;
   Future<UserEntity>? _userFuture;
   String? selected, error, _profileIssue;
+  late final AppLifecycleListener _lifecycle;
   String t(String key) => plannerText(context, key);
   @override
   void initState() {
     super.initState();
+    _lifecycle = AppLifecycleListener(
+      onResume: () {
+        if (mounted) setState(() {});
+      },
+    );
     _load();
   }
 
@@ -72,6 +79,7 @@ class _PlannerPageState extends State<PlannerPage> {
 
   @override
   void dispose() {
+    _lifecycle.dispose();
     repo.service.cancel();
     super.dispose();
   }
@@ -114,7 +122,7 @@ class _PlannerPageState extends State<PlannerPage> {
   Future<void> _generate(String start, {Json? previous}) async {
     try {
       final rules = await repo.rules();
-      if (repo.state['safety_ack'] != true) {
+      if (repo.state['safety_ack_version'] != 'older-obesity-v3') {
         if (!await _confirm(t('safetyTitle'), t('safety'))) return;
         await repo.acknowledge();
       }
@@ -215,7 +223,7 @@ class _PlannerPageState extends State<PlannerPage> {
         (a, b) =>
             b['plan']['period_start'].compareTo(a['plan']['period_start']),
       );
-    final today = localDay(DateTime.now());
+    final today = localDay(repo.now());
     final current =
         weeks.where((p) => p['id'] == selected).firstOrNull ??
         weeks
@@ -400,11 +408,13 @@ class _PlannerPageState extends State<PlannerPage> {
               ),
             if (current != null) ...[
               Text(
-                '${t('source')}: ${t(current['source'])} · 第${current['version']}版',
+                '${t('source')}: ${current['notice'] == 'local recipe swap' ? t('manual') : t(current['source'])} · 第${current['version']}版',
               ),
               if (current['notice'] != '')
                 Text(
-                  current['source'] == 'ai'
+                  current['notice'] == 'local recipe swap'
+                      ? '已按你的选择换菜，并重新核验营养。'
+                      : current['source'] == 'ai'
                       ? plannerErrorText(current['notice'])
                       : t('fallbackNotice'),
                 ),
@@ -441,7 +451,7 @@ class _PlannerPageState extends State<PlannerPage> {
               ),
               plannerButton(
                 'adjust',
-                '调整剩余餐单',
+                busy ? 'AI 正在调整，请稍候…' : '调整剩余餐单',
                 busy
                     ? null
                     : () => _generate(
@@ -563,8 +573,44 @@ class PlannerDayPage extends StatefulWidget {
 
 class _PlannerDayPageState extends State<PlannerDayPage> {
   bool busy = false;
-  String? error;
+  String? error, savingSlot;
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle = AppLifecycleListener(
+      onResume: () {
+        if (mounted) setState(() {});
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
+
   String t(String k) => plannerText(context, k);
+  void _showFeedback(String message, {bool failed = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..removeCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: Duration(seconds: failed ? 8 : 4),
+        ),
+      );
+  }
+
+  void _showFailure(Object cause) {
+    if (!mounted) return;
+    setState(() => error = '${t('failed')}: ${plannerErrorText(cause)}');
+    _showFeedback(error!, failed: true);
+  }
+
   Future<void> record(
     Json? meal,
     String status, {
@@ -572,8 +618,10 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
     double? portion,
     List<String>? externalIds,
   }) async {
+    if (busy) return;
     setState(() {
       busy = true;
+      savingSlot = meal?['slot'] ?? 'review';
       error = null;
     });
     try {
@@ -585,10 +633,27 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
         actualPortion: portion,
         externalIds: externalIds,
       );
+      if (mounted) {
+        final label = meal == null ? '今日回顾' : t(meal['slot']);
+        final message = status == 'pending'
+            ? '$label已撤销'
+            : meal == null
+            ? '今日回顾已保存'
+            : status == 'skipped'
+            ? '$label已标记为没吃'
+            : '$label已记录，可在“饮食记录”查看';
+        _showFeedback(message);
+      }
     } catch (e) {
-      error = '${t('failed')}: ${plannerErrorText(e)}';
+      _showFailure(e);
+    } finally {
+      if (mounted) {
+        setState(() {
+          busy = false;
+          savingSlot = null;
+        });
+      }
     }
-    if (mounted) setState(() => busy = false);
   }
 
   Future<String?> input(
@@ -635,7 +700,8 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
     final date = widget.day['date'] as String;
     final n = repo.catalog.dayNutrition(widget.day);
     final records = repo.state['records'];
-    final editable = date.compareTo(localDay(DateTime.now())) <= 0 && !busy;
+    final futureDay = date.compareTo(localDay(repo.now())) > 0;
+    final editable = !futureDay && !busy;
     return Scaffold(
       appBar: AppBar(title: Text(date)),
       body: Semantics(
@@ -644,7 +710,13 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
           padding: const EdgeInsets.all(16),
           children: [
             const Text('先看食材和做法，真正吃完后再记录。点错可以撤销。'),
-            if (date.compareTo(localDay(DateTime.now())) > 0)
+            if (busy) const LinearProgressIndicator(),
+            if (error != null)
+              Text(
+                error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            if (date.compareTo(localDay(repo.now())) > 0)
               const Text('这是未来的餐单，可以先查看或换餐，到当天再记录吃了什么。'),
             plannerSurface(
               'nutrition-details',
@@ -687,14 +759,21 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                         (recipe['ingredients'] as Map).entries
                             .map(
                               (e) =>
-                                  "${repo.catalog.foods[e.key]!['name']} ${(e.value * meal['portion']).round()}克",
+                                  "${repo.catalog.foods[e.key]!['name']} ${RecipeSteps.grams(e.key as String, e.value * meal['portion'])}克",
                             )
                             .join('、'),
+                      ),
+                      Text(
+                        '本餐用油 ${RecipeSteps.grams('oil', ((recipe['ingredients']['oil'] ?? 0) as num) * meal['portion'])}克 · 食盐 ${RecipeSteps.grams('salt', ((recipe['ingredients']['salt'] ?? 0) as num) * meal['portion'])}克',
+                        style: const TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       plannerSurface(
                         'control-16208',
                         ExpansionTile(
-                          title: Text(t('ingredients')),
+                          title: const Text('食材称量与详细做法'),
                           children: [
                             ...((recipe['ingredients'] as Map).entries.map((e) {
                               final food = repo.catalog.foods[e.key]!;
@@ -702,14 +781,24 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                                 'control-16497',
                                 ListTile(
                                   title: Text(
-                                    '${food['name']} ${(e.value * meal['portion']).toStringAsFixed(1)} 克（${food['state']}）',
+                                    '${food['name']} ${RecipeSteps.grams(e.key as String, e.value * meal['portion'])} 克（${food['state']}）',
                                   ),
                                 ),
                               );
                             })),
                             Padding(
                               padding: const EdgeInsets.all(8),
-                              child: Text(recipe['method']),
+                              child: Text(
+                                RecipeSteps.instructions(
+                                  repo.catalog,
+                                  meal['recipe_id'],
+                                  (meal['portion'] as num).toDouble(),
+                                ),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  height: 1.5,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -719,7 +808,13 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                         width: double.infinity,
                         child: plannerButton(
                           'complete-${meal['slot']}',
-                          status != 'pending' ? t('undo') : t('complete'),
+                          busy && savingSlot == meal['slot']
+                              ? '正在保存…'
+                              : futureDay
+                              ? '到这一天再记录'
+                              : status != 'pending'
+                              ? t('undo')
+                              : t('complete'),
                           editable
                               ? () => record(
                                   meal,
@@ -742,7 +837,7 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                                   !busy &&
                                           status == 'pending' &&
                                           date.compareTo(
-                                                localDay(DateTime.now()),
+                                                localDay(repo.now()),
                                               ) >=
                                               0
                                       ? () async {
@@ -791,8 +886,7 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                                               ..clear()
                                               ..addAll(updated);
                                           } catch (e) {
-                                            error =
-                                                '${t('failed')}: ${plannerErrorText(e)}';
+                                            _showFailure(e);
                                           }
                                           if (mounted) {
                                             setState(() => busy = false);
@@ -823,8 +917,8 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                                               !portion.isFinite ||
                                               portion <= 0 ||
                                               portion > 3) {
-                                            setState(
-                                              () => error = t('invalidPortion'),
+                                            _showFailure(
+                                              PlanRejected(t('invalidPortion')),
                                             );
                                             return;
                                           }
@@ -955,8 +1049,6 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                 NavigationOptions.weightHistoryRoute,
               ),
             ),
-            if (busy) const LinearProgressIndicator(),
-            if (error != null) Text(error!),
           ],
         ),
       ),

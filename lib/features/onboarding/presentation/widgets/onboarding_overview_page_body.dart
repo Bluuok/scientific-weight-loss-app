@@ -10,6 +10,7 @@ import 'package:opennutritracker/generated/l10n.dart';
 import 'package:provider/provider.dart';
 
 class OnboardingOverviewPageBody extends StatelessWidget {
+  final bool plannerOverview;
   final String calorieGoalDayString;
   final String carbsGoalString;
   final String fatGoalString;
@@ -26,6 +27,7 @@ class OnboardingOverviewPageBody extends StatelessWidget {
   const OnboardingOverviewPageBody({
     super.key,
     required this.setButtonActive,
+    this.plannerOverview = false,
     this.totalKcalCalculated,
     required this.calorieGoalDayString,
     required this.carbsGoalString,
@@ -38,6 +40,35 @@ class OnboardingOverviewPageBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (plannerOverview) {
+      return const SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '资料已准备好',
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 24),
+            Text(
+              '点下方“开始”，进入“我的计划”。',
+              style: TextStyle(fontSize: 22, height: 1.5),
+            ),
+            SizedBox(height: 20),
+            Text(
+              '先选不能吃的食材，再生成7天餐单。每日能量和食材份量会按当前资料及计划规则计算，并在生成前说明。',
+              style: TextStyle(fontSize: 20, height: 1.5),
+            ),
+            SizedBox(height: 20),
+            Text(
+              '本应用优先服务高血压合并肥胖的老年男性。减重前需确认适合；有肾病、心衰、进食困难或近期非自主消瘦时，先请医生或营养师评估。',
+              style: TextStyle(fontSize: 18, height: 1.5),
+            ),
+          ],
+        ),
+      );
+    }
     // #177: Stored calorie goal is always in kcal; only the displayed
     // number and unit-suffix change when the user prefers kJ.
     final usesKilojoules = context.watch<EnergyUnitProvider>().usesKilojoules;
@@ -72,16 +103,16 @@ class OnboardingOverviewPageBody extends StatelessWidget {
                 Text(
                   displayGoalString,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
                 Text(
                   perDayLabel,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
                 ),
               ],
             ),
@@ -111,47 +142,47 @@ class OnboardingOverviewPageBody extends StatelessWidget {
                 Text(
                   '$carbsGoalString g',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.secondary,
-                      ),
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
                 ),
                 const SizedBox(height: 8.0),
                 Text(
                   S.of(context).carbsLabel,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
                 ),
                 const SizedBox(height: 8.0),
                 Text(
                   '$fatGoalString g',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.secondary,
-                      ),
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
                 ),
                 Text(
                   S.of(context).fatLabel,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
                 ),
                 const SizedBox(height: 8.0),
                 Text(
                   '$proteinGoalString g',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.secondary,
-                      ),
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
                 ),
                 Text(
                   S.of(context).proteinLabel,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
                 ),
               ],
             ),
@@ -159,9 +190,9 @@ class OnboardingOverviewPageBody extends StatelessWidget {
           const SizedBox(height: 24.0),
           Center(
             child: TextButton.icon(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SourcesScreen()),
-              ),
+              onPressed: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const SourcesScreen())),
               icon: const Icon(Icons.menu_book_outlined),
               label: Text(S.of(context).settingsSourcesLabel),
             ),
@@ -238,9 +269,9 @@ class OnboardingOverviewPageBody extends StatelessWidget {
     bool emphasised = false,
   }) {
     final style = emphasised
-        ? Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          )
+        ? Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)
         : Theme.of(context).textTheme.bodySmall;
     return Row(
       children: [

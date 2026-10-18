@@ -122,6 +122,10 @@ class PlanRules {
     this.simpleSlot = 'lunch',
   });
 
+  double get minimumKcal => targetKcal * .9 < 1800 ? 1800 : targetKcal * .9;
+  double get maximumKcal => targetKcal * 1.1;
+  double get planningKcal => (minimumKcal + maximumKcal) / 2;
+
   void _keys(Json object, Set<String> required) {
     if (object.keys.toSet().difference(required).isNotEmpty ||
         required.difference(object.keys.toSet()).isNotEmpty) {
@@ -231,30 +235,10 @@ class PlanRules {
           foodIds.add(entry.key as String);
         }
       }
-      final n = catalog.dayNutrition(day);
       if (simple != 1) {
         throw const PlanRejected('Exactly one simple meal per day');
       }
-      if (n['kcal'] < targetKcal * .90 ||
-          n['kcal'] > targetKcal * 1.10 ||
-          n['kcal'] < 1800) {
-        throw const PlanRejected('Daily energy outside conservative target');
-      }
-      if (n['protein'] < minimumProtein ||
-          n['protein'] > 150 ||
-          n['sodium'] > 2000 ||
-          n['oil'] > 30) {
-        throw const PlanRejected(
-          'Protein, sodium or cooking oil outside limits',
-        );
-      }
-      if (foodIds.length < 9 ||
-          (groups['vegetable'] ?? 0) < 400 ||
-          (groups['fruit'] ?? 0) < 200 ||
-          (groups['grain'] ?? 0) < 100 ||
-          (groups['dairy'] ?? 0) < 200) {
-        throw const PlanRejected('Insufficient food-group diversity');
-      }
+      _validateDayNutrition(day, groups, foodIds);
     }
     final requiredProteins = availableProteins.length < 3
         ? availableProteins.length
@@ -264,6 +248,35 @@ class PlanRules {
     }
     if (weeklyRecipes.length < 6) {
       throw const PlanRejected('Weekly recipe diversity insufficient');
+    }
+  }
+
+  void _validateDayNutrition(
+    Json day,
+    Map<String, double> groups,
+    Set<String> foodIds,
+  ) {
+    final n = catalog.dayNutrition(day);
+    if (n['kcal'] < minimumKcal || n['kcal'] > maximumKcal) {
+      throw PlanRejected(
+        'Daily energy outside conservative target: ${day['date']} has '
+        '${(n['kcal'] as num).toStringAsFixed(2)} kcal; required '
+        '${minimumKcal.toStringAsFixed(2)} to ${maximumKcal.toStringAsFixed(2)} kcal. '
+        'Aim near ${planningKcal.toStringAsFixed(2)} kcal and recalculate all portions.',
+      );
+    }
+    if (n['protein'] < minimumProtein ||
+        n['protein'] > 150 ||
+        n['sodium'] > 2000 ||
+        n['oil'] > 30) {
+      throw const PlanRejected('Protein, sodium or cooking oil outside limits');
+    }
+    if (foodIds.length < 9 ||
+        (groups['vegetable'] ?? 0) < 400 ||
+        (groups['fruit'] ?? 0) < 200 ||
+        (groups['grain'] ?? 0) < 100 ||
+        (groups['dairy'] ?? 0) < 200) {
+      throw const PlanRejected('Insufficient food-group diversity');
     }
   }
 
@@ -299,9 +312,44 @@ class PlanRules {
         'meals': meals,
         'review': 'daily_review',
       };
-      final ratio = targetKcal / (catalog.dayNutrition(day)['kcal'] as double);
-      for (final meal in meals) {
-        meal['portion'] = ratio;
+      final fullSlot = simpleSlot == 'lunch' ? 'dinner' : 'lunch';
+      final fullIndex = fullSlot == 'lunch' ? 1 : 2;
+      final options = choices(fullSlot, false);
+      var feasible = false;
+      for (var attempt = 0; attempt < options.length; attempt++) {
+        meals[fullIndex]['recipe_id'] =
+            options[(i + rotation + attempt) % options.length]['id'];
+        for (final meal in meals) {
+          meal['portion'] = 1.0;
+        }
+        final templateKcal = targetKcal <= 1800 ? 1800.001 : targetKcal;
+        final ratio =
+            templateKcal / (catalog.dayNutrition(day)['kcal'] as double);
+        if (ratio < .65 || ratio > 1.4) continue;
+        final groups = <String, double>{};
+        final ids = <String>{};
+        for (final meal in meals) {
+          meal['portion'] = ratio;
+          for (final entry
+              in (catalog.recipes[meal['recipe_id']]!['ingredients'] as Map)
+                  .entries) {
+            final group = catalog.foods[entry.key]!['group'] as String;
+            groups[group] = (groups[group] ?? 0) + (entry.value as num) * ratio;
+            ids.add(entry.key as String);
+          }
+        }
+        try {
+          _validateDayNutrition(day, groups, ids);
+          feasible = true;
+          break;
+        } on PlanRejected {
+          /* Try another verified main dish. */
+        }
+      }
+      if (!feasible) {
+        throw const PlanRejected(
+          'No safe local template for this profile and exclusions',
+        );
       }
       days.add(day);
     }

@@ -13,6 +13,7 @@ String plannerText(BuildContext context, String key) {
     'source' => s.mpSource,
     'ai' => s.mpAi,
     'fallback' => s.mpFallback,
+    'manual' => '已手动换菜',
     'mock' => s.mpMock,
     'fallbackNotice' => s.mpFallbackNotice,
     'progress' => s.mpProgress,

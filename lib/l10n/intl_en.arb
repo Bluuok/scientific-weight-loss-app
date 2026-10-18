@@ -1396,7 +1396,7 @@
   "mpFailed": "Operation failed",
   "mpStorageError": "Cannot read plans; reopen. Data retained.",
   "mpSafetyTitle": "Before you start",
-  "mpSafety": "If blood pressure remains uncontrolled despite medication, arrange a clinical review. This app cannot adjust medication or replace medical advice.",
+  "mpSafety": "Primarily for older adults with hypertension and obesity, currently optimized for men. A clinician should assess suitability, kidney function, nutrition and muscle strength before weight loss. Kidney disease, heart failure, swallowing difficulty, unintended weight loss or prescribed diets need individual review. This app cannot adjust medicines or replace clinical care; do not self-prescribe potassium supplements, potassium salt, fasting or intense exercise.",
   "mpReference": "Adjustable reference plan",
   "mpTarget": "Daily reference energy",
   "mpProtein": "Protein",

@@ -178,6 +178,7 @@ void main() {
       });
       await tester.pumpAndSettle();
       expect((await repo.intakes.getAllIntakesDBO()).length, 1);
+      expect(find.textContaining('已记录，可在'), findsOneWidget);
       await tester.ensureVisible(find.text('撤销记录').first);
       await tester.runAsync(() async {
         await tester.tap(find.text('撤销记录').first);
@@ -197,6 +198,85 @@ void main() {
       expect(tester.takeException(), null);
     },
   );
+  testWidgets(
+    'failed completion is visible without scrolling and leaves no intake',
+    (tester) async {
+      final day = copyJson(repo.state['plans'][0]['plan']['days'][0]);
+      user.weight = 55;
+      await tester.pumpWidget(app(PlannerDayPage(repo: repo, day: day)));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('按这份吃完了').first);
+      await tester.runAsync(() async {
+        await tester.tap(find.text('按这份吃完了').first);
+        await Future<void>.delayed(const Duration(milliseconds: 150));
+      });
+      await tester.pumpAndSettle();
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(SnackBar),
+          matching: find.textContaining('体重偏低'),
+        ),
+        findsOneWidget,
+      );
+      expect(await repo.intakes.getAllIntakesDBO(), isEmpty);
+      expect(find.text('正在保存…'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'future meal action explicitly says when recording becomes available',
+    (tester) async {
+      final day = copyJson(repo.state['plans'][0]['plan']['days'][1]);
+      await tester.pumpWidget(app(PlannerDayPage(repo: repo, day: day)));
+      await tester.pumpAndSettle();
+      expect(find.text('到这一天再记录'), findsWidgets);
+      final button = tester.widget<FilledButton>(
+        find.descendant(
+          of: find.bySemanticsIdentifier('planner-complete-breakfast'),
+          matching: find.byType(FilledButton),
+        ),
+      );
+      expect(button.onPressed, isNull);
+      expect(await repo.intakes.getAllIntakesDBO(), isEmpty);
+    },
+  );
+
+  testWidgets('resuming across midnight enables the formerly future meal', (
+    tester,
+  ) async {
+    var clock = DateTime.now();
+    final clockRepo = PlannerRepository(
+      repo.db,
+      repo.intakes,
+      repo.users,
+      repo.weights,
+      repo.tracked,
+      repo.service,
+      now: () => clock,
+    );
+    await tester.runAsync(clockRepo.initialize);
+    final day = copyJson(repo.state['plans'][0]['plan']['days'][1]);
+    await tester.pumpWidget(app(PlannerDayPage(repo: clockRepo, day: day)));
+    await tester.pumpAndSettle();
+    expect(find.text('到这一天再记录'), findsWidgets);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    clock = clock.add(const Duration(days: 1));
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(find.text('到这一天再记录'), findsNothing);
+    expect(find.text('按这份吃完了'), findsWidgets);
+    final button = tester.widget<FilledButton>(
+      find.descendant(
+        of: find.bySemanticsIdentifier('planner-complete-breakfast'),
+        matching: find.byType(FilledButton),
+      ),
+    );
+    expect(button.onPressed, isNotNull);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'large text day and settings render without overflow; captures actual Flutter frames',
     (tester) async {

@@ -92,12 +92,21 @@ class PlannerRepository {
     final user = await users.getUserData();
     final issue = weightLossIssue(user);
     if (issue != null) throw PlanRejected(issue);
-    final target = math.max(1800.0, TDEECalc.getTDEEKcalIOM2005(user) * .90);
+    final maintenance = TDEECalc.getTDEEKcalIOM2005(user);
+    final target = math.max(1800.0, maintenance * .90);
+    // This catalogue has a conservative floor, not a universal older-adult requirement.
+    // Do not force an unsupported low-expenditure profile into a surplus menu.
+    if (!maintenance.isFinite || target * 1.1 >= maintenance) {
+      throw const PlanRejected('当前估算能量与本餐单模板不匹配，需要营养师个体评估，暂不自动生成减重餐单。');
+    }
     final prefs = state['preferences'];
     return PlanRules(
       catalog,
       targetKcal: target,
-      minimumProtein: math.min(100, math.max(60, user.weightKG * .8)),
+      minimumProtein: math.min(
+        120,
+        math.max(60, user.weightKG * (user.age >= 60 ? 1.0 : .8)),
+      ),
       avoid: List<String>.from(prefs['avoid']),
       simpleSlot: simpleSlot ?? prefs['simple_slot'],
     );
@@ -111,6 +120,7 @@ class PlannerRepository {
   Future<void> acknowledge() => _lock.synchronized(() async {
     final s = state;
     s['safety_ack'] = true;
+    s['safety_ack_version'] = 'older-obesity-v3';
     await _save(s);
   });
 
@@ -268,9 +278,11 @@ class PlannerRepository {
           'height_cm': user.heightCM,
           'weight_kg': user.weightKG,
           'long_term_goal_kg': user.targetWeightKg,
-          'hypertension_known': true,
-          'blood_pressure_uncontrolled': true,
-          'taking_antihypertensives': true,
+          'intended_audience':
+              'older_adults_with_hypertension_and_obesity_male_priority',
+          'hypertension_known': null,
+          'blood_pressure_uncontrolled': null,
+          'taking_antihypertensives': null,
           'renal_function': 'unknown',
           'activity_level': user.pal.name,
           'medical_nutrition_restrictions': 'unknown',
@@ -518,7 +530,7 @@ class PlannerRepository {
       updated['id'] =
           "${updated['plan']['period_start']}-v${revisions.length + 1}";
       updated['version'] = revisions.length + 1;
-      updated['source'] = 'fallback';
+      updated['source'] = 'manual';
       updated['notice'] = 'local recipe swap';
       updated['reason'] = 'user requested $date/$slot swap';
       updated['created_at'] = now().toIso8601String();

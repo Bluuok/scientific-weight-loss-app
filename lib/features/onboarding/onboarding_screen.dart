@@ -184,6 +184,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   /// step, since every jump resolves through that enum's indices.
   List<PageViewModel> _getPageViewModels() {
     final selection = _onboardingBloc.userSelection;
+    final today = DateTime.now();
+    final olderAdult =
+        selection.birthday != null &&
+        !selection.birthday!.isAfter(
+          DateTime(today.year - 60, today.month, today.day),
+        );
     final pages = <PageViewModel>[
       PageViewModel(
         title: S.of(context).onboardingWelcomeLabel,
@@ -226,6 +232,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         decoration: _pageDecoration,
         image: _defaultImageWidget,
         bodyWidget: OnboardingBodyMeasurementsPageBody(
+          olderAdult: olderAdult,
           setButtonContent: _setBodyMeasurementsPageData,
           initialHeightCm: selection.height,
           initialWeightKg: selection.weight,
@@ -311,6 +318,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         decoration: _pageDecoration,
         image: _defaultImageWidget,
         bodyWidget: OnboardingOverviewPageBody(
+          plannerOverview: true,
           calorieGoalDayString:
               _onboardingBloc.getOverviewCalorieGoal()?.toInt().toString() ??
               "?",

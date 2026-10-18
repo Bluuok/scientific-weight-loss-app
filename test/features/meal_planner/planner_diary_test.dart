@@ -86,6 +86,7 @@ void main() {
       expect(repo.state['plans'].length, 2);
       expect(original['days'][0]['meals'][1]['recipe_id'], 's0');
       expect(day['meals'][1]['recipe_id'], 's1');
+      expect(repo.state['plans'].last['source'], 'manual');
       final rule = await repo.rules();
       rule.validate(repo.state['plans'].last['plan'], today);
       await repo.record(
