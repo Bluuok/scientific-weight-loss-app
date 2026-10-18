@@ -48,6 +48,17 @@ class RecipeSteps {
       } else if (ingredients.containsKey('egg')) {
         steps.add('${item('egg')}打散加少量水，取本餐油的一半抹碗后蒸成全熟蛋羹，不吃生蛋或溏心蛋。');
       }
+      // These ingredients are neither the primary meat nor vegetables; they
+      // still need explicit weighed preparation instructions.
+      if (ingredients.containsKey('soybean')) {
+        steps.add('${item('soybean')}为去荚毛豆仁，按生重称好，水煮至完全熟透后再食用；牙口差可略压碎。');
+      }
+      if (ingredients.containsKey('potato')) {
+        steps.add('${item('potato')}按可食部生重称量，切小块后彻底煮熟；发绿、发芽或有苦味的土豆不要使用。');
+      }
+      if (ingredients.containsKey('sweet_potato')) {
+        steps.add('${item('sweet_potato')}按可食部生重称量，切小块后蒸熟至软，不额外加糖或油。');
+      }
       final vegetables = ingredients.keys
           .where((id) => catalog.foods[id]!['group'] == 'vegetable')
           .cast<String>()
