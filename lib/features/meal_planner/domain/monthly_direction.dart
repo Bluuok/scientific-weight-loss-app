@@ -25,6 +25,7 @@ class MonthlyDirection {
       : day <= 21
       ? 3
       : 4;
+
   /// Observed measurements only; never extrapolate or change calories
   /// from a few scale readings.
   static Json _weightEvidence(

@@ -33,7 +33,7 @@ void main() {
     'USDA source records complete; fallback passes independent calculation for seven dates',
     () {
       expect(catalog.foods.length, 26);
-      expect(catalog.recipes.length, 13);
+      expect(catalog.recipes.length, 28);
       rules.validate(plan, '2026-10-16');
       for (final day in plan['days']) {
         final n = catalog.dayNutrition(day);

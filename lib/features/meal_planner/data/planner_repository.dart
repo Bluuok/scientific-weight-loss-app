@@ -135,10 +135,9 @@ class PlannerRepository {
     final user = await users.getUserData();
     final rule = await rules();
     final measurements = (await weights.getAllEntries())
-        .map((w) => <String, dynamic>{
-              'date': localDay(w.date),
-              'kg': w.weightKg,
-            })
+        .map(
+          (w) => <String, dynamic>{'date': localDay(w.date), 'kg': w.weightKg},
+        )
         .toList();
     return MonthlyDirection.build(
       monthStart: starts.isEmpty ? weekStart : starts.first,

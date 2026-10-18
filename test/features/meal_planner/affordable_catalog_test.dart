@@ -45,7 +45,10 @@ void main() {
           rules.validate(plan, '2026-10-18');
           for (final day in plan['days']) {
             final n = catalog.dayNutrition(Map<String, dynamic>.from(day));
-            expect(n['kcal'], inInclusiveRange(rules.minimumKcal, rules.maximumKcal));
+            expect(
+              n['kcal'],
+              inInclusiveRange(rules.minimumKcal, rules.maximumKcal),
+            );
             expect(n['protein'], greaterThanOrEqualTo(rules.minimumProtein));
             expect(n['sodium'], lessThanOrEqualTo(2000));
             expect(n['oil'], lessThanOrEqualTo(30));
