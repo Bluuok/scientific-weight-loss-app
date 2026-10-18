@@ -1,5 +1,15 @@
 # AGENTS.md
 
+## Personal fork scope (takes precedence over inherited upstream guidance)
+
+- This fork supports Android phones only, primarily Chinese older men with hypertension and obesity who are suitable for weight loss.
+- Do not add iOS, web, desktop, App Store or Google Play deployment work unless the user explicitly changes scope.
+- Default CI validates Dart/Flutter tests, analysis and an Android develop APK. Emulator integration tests are manually selectable; neither stores nor external AI providers are called by default.
+- Existing upstream iOS files are retained for source compatibility and history, not maintained or validated as a supported product.
+- Keep Chinese accessibility, measured recipe quantities, clinical uncertainty and immutable actual diary history intact. Never publish credentials or local patient/test-profile data.
+- Follow docs/android-project-scope.md for delivery boundaries. CI APKs contain stub configuration and are not family-ready configured packages.
+
+
 Guidance for AI coding agents working in this repository. This is the **canonical** agent instruction file. `CLAUDE.md` and `.github/copilot-instructions.md` only point here.
 
 ## Project Overview

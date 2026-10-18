@@ -1,3 +1,7 @@
+> **个人安卓二开项目：科学饮食**
+> 仅支持安卓手机，主要面向适合减重的高血压肥胖老年男性。以中文 AI 餐单、逐餐克数与做法、真实饮食记录为核心。
+> 本仓库不是原项目的官方发行版；下方保留原项目介绍与来源。[本项目范围与验证方式](docs/android-project-scope.md)。
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/icon/ont_banner_top_light.png">
