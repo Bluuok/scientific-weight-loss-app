@@ -62,7 +62,7 @@ class MonthlyDirection {
       'recorded_days': dates.length,
       'observation_span_days': span,
       'observed_change_kg': enough ? last! - first! : null,
-      'observed_change_pct': enough ? (last! - first!) / first! * 100 : null,
+      'observed_change_pct': enough ? (last! - first!) / first * 100 : null,
       'interpretation':
           'This is only a difference between recorded weigh-ins. Daily fluctuation is not fat loss. '
           'Never infer muscle change or alter calories automatically. Missing data stays unknown.',
