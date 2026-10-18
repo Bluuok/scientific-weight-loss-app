@@ -71,6 +71,9 @@ void main() {
     expect(advice, contains('毛豆仁'));
     expect(advice, contains('烹调油 10.00克、食盐 1.00克'));
     expect(advice, contains('仅使用清单中已有食材'));
+    expect(RecipeSteps.instructions(catalog, 's6', 1), contains('蛋液彻底凝固'));
+    expect(RecipeSteps.instructions(catalog, 'd8', 1), contains('发绿、发芽'));
+    expect(RecipeSteps.instructions(catalog, 'd9', 1), contains('红薯'));
     final n = catalog.nutrition('s7', 1);
     expect(n['oil'], 10);
     expect(n['sodium'], lessThan(2000));
