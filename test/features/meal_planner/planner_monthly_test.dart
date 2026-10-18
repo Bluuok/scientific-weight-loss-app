@@ -19,6 +19,9 @@ void main() {
         longTermGoalKg: 85,
       );
       expect(m['phase'], 2);
+      expect(m['cycle_number'], 1);
+      expect(m['cycle_start'], '2026-10-16');
+      expect(m['weight_observation']['status'], 'insufficient_data');
       expect(m['program_day'], 8);
       expect(m['first_month_end'], '2026-11-14');
       expect(m['reference_goal_kg'], 95);
@@ -44,9 +47,49 @@ void main() {
       );
       expect(build('2026-12-28', '2027-01-04')['phase'], 2);
       expect(build('2028-02-25', '2028-03-03')['program_day'], 8);
-      expect(build('2026-10-16', '2026-12-01')['phase'], 4);
+      final cycle2 = build('2026-10-16', '2026-12-01');
+      expect(cycle2['phase'], 3);
+      expect(cycle2['cycle_number'], 2);
+      expect(cycle2['program_day'], 17);
+      expect(cycle2['overall_program_day'], 47);
+      expect(cycle2['cycle_start'], '2026-11-15');
+      expect(cycle2['cycle_end'], '2026-12-14');
+      final rollover = build('2026-10-16', '2026-11-13');
+      expect(rollover['phase'], 4);
+      expect(rollover['day_focus'][1]['focus'], MonthlyDirection.focuses[3]);
+      expect(rollover['day_focus'][2]['focus'], MonthlyDirection.focuses[0]);
     },
   );
+  test('weight evidence requires multiple days and never predicts the future', () {
+    Json build(List<Json> weights) => MonthlyDirection.build(
+      monthStart: '2026-10-16',
+      weekStart: '2026-10-30',
+      initialWeightKg: 100,
+      currentWeightKg: 98,
+      heightCm: 178,
+      targetKcal: 2337,
+      minimumProtein: 100,
+      weightMeasurements: weights,
+    );
+    final tooSparse = build([
+      {'date': '2026-10-16', 'kg': 100},
+      {'date': '2026-10-29', 'kg': 96},
+    ]);
+    expect(tooSparse['weight_observation']['status'], 'insufficient_data');
+    expect(tooSparse['weight_observation']['observed_change_kg'], isNull);
+    final observed = build([
+      {'date': '2026-10-16', 'kg': 100},
+      {'date': '2026-10-22', 'kg': 99.5},
+      {'date': '2026-10-28', 'kg': 99},
+      {'date': '2026-11-01', 'kg': 94}, // Future data ignored.
+      {'date': '2026-10-20', 'kg': -2}, // Invalid weight ignored.
+    ]);
+    expect(observed['weight_observation']['status'], 'observed_only');
+    expect(observed['weight_observation']['recorded_days'], 3);
+    expect(observed['weight_observation']['observed_change_kg'], -1);
+    expect(observed['weight_observation']['observed_change_pct'], -1);
+    expect(observed['target_kcal'], 2337); // Never tighten calories.
+  });
   test(
     'simple meal protein rotation cannot be defeated by varying only breakfast and dinner',
     () {
