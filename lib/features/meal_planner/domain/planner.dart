@@ -114,12 +114,14 @@ class PlanRules {
   final double minimumProtein;
   final List<String> avoid;
   final String simpleSlot;
+  final String budget;
   PlanRules(
     this.catalog, {
     required this.targetKcal,
     required this.minimumProtein,
     this.avoid = const [],
     this.simpleSlot = 'lunch',
+    this.budget = 'normal',
   });
 
   double get minimumKcal => targetKcal * .9 < 1800 ? 1800 : targetKcal * .9;
@@ -281,14 +283,23 @@ class PlanRules {
   }
 
   Json fallback(String start, {int rotation = 0}) {
-    List<Json> choices(String slot, bool simple) => catalog.recipes.values
-        .where(
-          (r) =>
-              (r['slots'] as List).contains(slot) &&
-              r['simple'] == simple &&
-              allowed(r['id']),
-        )
-        .toList();
+    List<Json> choices(String slot, bool simple) {
+      final options = catalog.recipes.values
+          .where(
+            (r) =>
+                (r['slots'] as List).contains(slot) &&
+                r['simple'] == simple &&
+                allowed(r['id']),
+          )
+          .toList();
+      if (budget != 'economy') return options;
+      // Preference ranking, not a clinical or live-price claim. Preserve
+      // original order within each tier and never override exclusions.
+      return [
+        ...options.where((r) => r['budget_tier'] == 'everyday'),
+        ...options.where((r) => r['budget_tier'] != 'everyday'),
+      ];
+    }
     final days = <Json>[];
     for (var i = 0; i < 7; i++) {
       final meals = <Json>[];
