@@ -109,6 +109,7 @@ class PlannerRepository {
       ),
       avoid: List<String>.from(prefs['avoid']),
       simpleSlot: simpleSlot ?? prefs['simple_slot'],
+      budget: prefs['budget'] == 'economy' ? 'economy' : 'normal',
     );
   }
 
