@@ -65,6 +65,10 @@ class RecipeSteps {
     for (final id in fruits) {
       steps.add('${item(id)}按清单可食部取量，清洗、去核或去皮，切成易咀嚼的小块；牙口差可蒸软，不加糖。');
     }
+    final tip = catalog.recipes[recipeId]?['flavor_tip'];
+    if (tip is String && tip.trim().isNotEmpty) {
+      steps.add('家常口感建议：$tip 所有做法仅使用清单中已有食材与称好的油盐。');
+    }
     steps.add(
       '生熟分开操作；肉类做熟后尽快食用。上述步骤不指定固定蒸煮分钟数，以食材厚度、软熟程度和中心温度判断。吞咽困难需专门评估，不能仅靠切碎或煮软。',
     );
