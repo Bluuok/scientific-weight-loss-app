@@ -1009,6 +1009,34 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
               ),
             if (futureDay)
               const Text('这是未来的餐单；可以先看菜谱，到当天再记录。'),
+            if (recordedMeals == 3 &&
+                !futureDay && !medicalBlocked &&
+                records['$date/review']?['status'] != 'completed')
+              Card(
+                color: PlannerVisual.lunch,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text('今天三餐都有记录了',
+                        style: Theme.of(context).textTheme.titleMedium
+                          ?.copyWith(color: PlannerVisual.lunchInk)),
+                      const Text('可以写一句今天吃得怎么样，也可以稍后再写。'),
+                      plannerButton(
+                        'quick-review',
+                        '写一句今天的感受',
+                        busy ? null : () async {
+                          final note = await input(t('reviewHint'));
+                          if (note != null) {
+                            await record(null, 'completed', notes: note);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             if (medicalBlocked)
               Card(
                 color: PlannerVisual.caution,
