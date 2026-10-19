@@ -17,6 +17,7 @@ import 'package:opennutritracker/features/add_meal/domain/entity/meal_entity.dar
 import 'package:opennutritracker/features/add_meal/domain/entity/meal_nutriments_entity.dart';
 import '../domain/planner.dart';
 import '../domain/monthly_direction.dart';
+import '../domain/cycle_progress_review.dart';
 import '../domain/weight_loss_eligibility.dart';
 import 'meal_planning_service.dart';
 import 'authority_sources_service.dart';
@@ -124,6 +125,25 @@ class PlannerRepository {
     s['safety_ack_version'] = 'older-obesity-v3';
     await _save(s);
   });
+
+  Json cycleReview(String asOf) {
+    final s = state;
+    final starts = (s['plans'] as List)
+        .map((p) => p['plan']['period_start'] as String)
+        .toList()..sort();
+    if (starts.isEmpty) {
+      return {
+        'status': 'no_plan',
+        'message': '没有已创建的周计划，不能计算执行反馈。',
+      };
+    }
+    return CycleProgressReview.build(
+      programStart: starts.first,
+      asOf: asOf,
+      plans: List<Json>.from(s['plans']),
+      records: Map<String, dynamic>.from(s['records']),
+    );
+  }
 
   Future<Json> monthlyDirection(String weekStart) async {
     final s = state;
@@ -296,6 +316,7 @@ class PlannerRepository {
           'medical_nutrition_restrictions': 'unknown',
         },
         'monthly_direction': await monthlyDirection(start),
+        'cycle_execution_review': cycleReview(localDay(now())),
         'reference_material': referenceMaterial,
         'references_status': referenceMaterial.isEmpty
             ? 'not_queried_or_unavailable'
