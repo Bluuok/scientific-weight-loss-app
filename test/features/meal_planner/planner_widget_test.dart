@@ -519,7 +519,7 @@ void main() {
     expect(find.textContaining('今天三餐都有记录了'), findsOneWidget);
     await tester.tap(find.bySemanticsIdentifier('planner-quick-review'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.bySemanticsIdentifier('planner-edit-input'), '今天胃口不错');
+    await tester.enterText(find.byType(TextField), '今天胃口不错');
     await tester.runAsync(() async {
       await tester.tap(find.text('保存').last);
       await Future<void>.delayed(const Duration(milliseconds: 120));
