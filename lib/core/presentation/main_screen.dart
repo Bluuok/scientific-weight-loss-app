@@ -150,7 +150,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         height:
-            78 + (MediaQuery.textScalerOf(context).scale(14) - 14).clamp(0, 60),
+            78 + 2 * (MediaQuery.textScalerOf(context).scale(14) - 14).clamp(0, 60),
         padding: EdgeInsets.zero,
         shape: const AutomaticNotchedShape(RoundedRectangleBorder()),
         notchMargin: 8,

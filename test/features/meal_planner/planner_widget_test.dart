@@ -520,6 +520,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.bySemanticsIdentifier('planner-quick-review'), findsOneWidget);
     expect(find.textContaining('今天三餐都有记录了'), findsOneWidget);
+    expect(find.byTooltip('撤销今日回顾'), findsNothing);
     await tester.runAsync(() async {
       await tester.tap(find.bySemanticsIdentifier('planner-quick-review'));
     });
@@ -532,6 +533,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(repo.state['records']["${day['date']}/review"]['status'], 'completed');
     expect(repo.state['records']["${day['date']}/review"]['notes'], '今天胃口不错');
+    expect(find.byTooltip('撤销今日回顾'), findsOneWidget);
     expect(tester.takeException(), null);
   });
 
@@ -547,6 +549,9 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 100));
         });
         await tester.pumpAndSettle();
+        final title = find.descendant(of: find.byType(AppBar),
+          matching: find.text('我的计划'));
+        expect(tester.renderObject<RenderParagraph>(title).didExceedMaxLines, isFalse);
         final row = find.bySemanticsIdentifier('planner-today-meal-$slot');
         await tester.ensureVisible(row);
         await tester.pumpAndSettle();

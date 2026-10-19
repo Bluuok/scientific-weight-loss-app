@@ -277,11 +277,8 @@ class _PlannerPageState extends State<PlannerPage> {
     final weekReviewsRecorded = days.where(
       (day) => hasRecord(day['date'] as String, 'review'),
     ).length;
-    return Scaffold(
-      backgroundColor: PlannerVisual.background,
-      appBar: AppBar(
-        title: Text(t('title')),
-        actions: [
+    final largeToolbar = MediaQuery.textScalerOf(context).scale(18) > 22;
+    final toolbarActions = <Widget>[
           Semantics(
             identifier: 'planner-help',
             child: TextButton(onPressed: _help, child: const Text('怎么用')),
@@ -306,7 +303,23 @@ class _PlannerPageState extends State<PlannerPage> {
               ),
             ),
           ),
-        ],
+    ];
+    return Scaffold(
+      backgroundColor: PlannerVisual.background,
+      appBar: AppBar(
+        title: Text(t('title')),
+        actions: largeToolbar ? null : toolbarActions,
+        bottom: largeToolbar
+            ? PreferredSize(
+                preferredSize: Size.fromHeight(
+                  56 + MediaQuery.textScalerOf(context).scale(18) - 18,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: toolbarActions,
+                ),
+              )
+            : null,
       ),
       body: Semantics(
         identifier: 'planner-weeks',
@@ -1420,7 +1433,9 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                     style: const TextStyle(fontSize: 20),
                   ),
                   subtitle: Text(
-                    '${t(records['$date/review']?['status'] ?? 'pending')} · ${records['$date/review']?['notes'] ?? ''}',
+                    records['$date/review']?['status'] == 'completed'
+                        ? '${t('completed')} · ${records['$date/review']?['notes'] ?? ''}'
+                        : '还没有填写饮食回顾',
                   ),
                   onTap: editable
                       ? () async {
@@ -1430,7 +1445,8 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                           }
                         }
                       : null,
-                  trailing: plannerSurface(
+                  trailing: records['$date/review']?['status'] == 'completed'
+                      ? plannerSurface(
                     'control-25015',
                     IconButton(
                       tooltip: '撤销今日回顾',
@@ -1439,7 +1455,7 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                           ? () => record(null, 'pending')
                           : null,
                     ),
-                  ),
+                  ) : null,
                 ),
               ),
             ),
