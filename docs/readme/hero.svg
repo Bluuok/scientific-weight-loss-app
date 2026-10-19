@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-labelledby="title desc">
+  <title id="title">科学饮食</title>
+  <desc id="desc">把饮食建议，变成每天做得出的三餐。中文安卓饮食规划与记录工具。</desc>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#102f27"/><stop offset="1" stop-color="#225a43"/></linearGradient></defs>
+  <rect width="1200" height="420" rx="24" fill="url(#bg)"/>
+  <circle cx="1090" cy="68" r="205" fill="#9acd9d" opacity=".08"/>
+  <circle cx="1082" cy="70" r="132" fill="none" stroke="#b7ddba" stroke-width="1" opacity=".17"/>
+  <g font-family="'Microsoft YaHei','Noto Sans SC',sans-serif">
+    <text x="64" y="69" fill="#b6d6bd" font-size="16" letter-spacing="4">科学饮食 / ANDROID</text>
+    <text x="60" y="149" fill="#fff8eb" font-size="56" font-weight="700">把饮食建议，</text>
+    <text x="60" y="219" fill="#fff8eb" font-size="56" font-weight="700">变成每天做得出的三餐。</text>
+    <text x="64" y="269" fill="#c4d8cb" font-size="20">AI 周餐单 · 食材克数与做法 · 真实记录 · 家庭采购</text>
+    <g font-size="16" fill="#e2eee1">
+      <rect x="64" y="316" width="146" height="45" rx="22" fill="#ffffff" opacity=".08"/><text x="91" y="345">01 先核对</text>
+      <rect x="226" y="316" width="146" height="45" rx="22" fill="#ffffff" opacity=".08"/><text x="253" y="345">02 再计划</text>
+      <rect x="388" y="316" width="146" height="45" rx="22" fill="#ffffff" opacity=".08"/><text x="415" y="345">03 按餐做</text>
+      <rect x="550" y="316" width="146" height="45" rx="22" fill="#ffffff" opacity=".08"/><text x="577" y="345">04 如实记</text>
+    </g>
+    <text x="1136" y="370" text-anchor="end" fill="#b6d6bd" font-size="14">少一点操作，多一点清楚。</text>
+  </g>
+</svg>

@@ -85,3 +85,11 @@ ios/vendor/
 /outputs/*.apk
 
 /outputs/真机*.png
+
+# Private local configuration, delivery packages and live test reports
+.env.*
+!.env.example
+/outputs/
+tool/*_live_test.dart
+tool/api_function_matrix_test.dart
+tool/month_journey_test.dart
