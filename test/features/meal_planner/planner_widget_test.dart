@@ -342,17 +342,16 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 100));
       });
       await tester.pumpAndSettle();
-      final dropdown = tester.widget<DropdownButton<String>>(
-        find.byType(DropdownButton<String>),
-      );
-      expect(dropdown.value, repo.state['plans'][0]['id']);
       await tester.scrollUntilVisible(
         find.text('查看一周安排'), 210,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.tap(find.text('查看一周安排'));
       await tester.pumpAndSettle();
-      expect(find.byType(DropdownButton<String>), findsOneWidget);
+      final dropdown = tester.widget<DropdownButton<String>>(
+        find.byType(DropdownButton<String>),
+      );
+      expect(dropdown.value, repo.state['plans'][0]['id']);
       await tester.tap(find.text('怎么用'));
       await tester.pumpAndSettle();
       expect(find.textContaining('真正吃完后'), findsOneWidget);
