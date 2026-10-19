@@ -1,4 +1,7 @@
 import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:opennutritracker/features/meal_planner/presentation/medical_safety_page.dart';
+import 'generation_consistency_test.dart' show DeferredService;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:opennutritracker/core/data/data_source/intake_data_source.dart';
@@ -18,7 +21,7 @@ void main() {
   late Directory dir;
   late TestDB db;
   late PlannerRepository repo;
-  Future<void> open() async {
+  Future<void> open({MealPlanningService? service}) async {
     db = TestDB();
     db.plans = await Hive.openBox<String>('plans');
     db.intakes = await Hive.openBox<IntakeDBO>('intakes');
@@ -28,7 +31,7 @@ void main() {
       TestUser(),
       TestWeights(),
       TestTracked(),
-      MealPlanningService(OfflineCredentials()),
+      service ?? MealPlanningService(OfflineCredentials()),
       enforceMedicalScreen: true,
     );
     await repo.initialize();
@@ -71,4 +74,41 @@ void main() {
     );
     expect(repo.state['plans'], isEmpty);
   });
+  test('risk added while AI is running prevents publishing the result', () async {
+    await Hive.close();
+    final service = DeferredService();
+    await open(service: service);
+    final answers = {
+      for (final key in MedicalSafetyScreen.labels.keys) key: 'no',
+    };
+    await repo.saveMedicalScreen(answers);
+    final request = repo.generate(localDay(DateTime.now()));
+    await service.started.future;
+    await repo.saveMedicalScreen({...answers, 'kidney_disease': 'yes'});
+    service.finish.complete(service.answer);
+    await expectLater(request, throwsA(isA<PlanRejected>()));
+    expect(repo.state['plans'], isEmpty);
+  });
+
+  testWidgets('risk screen is usable at 360dp with twice-sized text', (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(MaterialApp(
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(2)),
+        child: child!,
+      ),
+      home: MedicalSafetyPage(repo: repo),
+    ));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.scrollUntilVisible(find.text('保存健康风险核对'), 500);
+    expect(tester.widget<FilledButton>(find.byType(FilledButton)).onPressed, isNotNull);
+    expect(repo.medicalSafetyIssue, isNotNull);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
 }

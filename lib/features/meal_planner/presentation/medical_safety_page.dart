@@ -71,7 +71,7 @@ class _MedicalSafetyPageState extends State<MedicalSafetyPage> {
                   Text(entry.value, style: const TextStyle(fontSize: 17)),
                   const SizedBox(height: 8),
                   Semantics(
-                    identifier: 'planner-risk-${entry.key}',
+                    identifier: "planner-risk-${entry.key.replaceAll('_', '-')}",
                     child: SegmentedButton<String>(
                       showSelectedIcon: false,
                       segments: const [
