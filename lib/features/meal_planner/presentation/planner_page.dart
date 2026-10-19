@@ -1591,36 +1591,68 @@ class _PlannerSettingsState extends State<PlannerSettings> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  Text(t('reuseProfile')),
-                  const Text('选中不能吃的食材，其他选项可以保持默认。修改后点击底部保存。'),
+                  Card(
+                    color: PlannerVisual.info,
+                    child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Text(
+                        '只需选平时的吃饭习惯，其他保持默认就行。'
+                        '改完后点击下面的“保存饮食偏好”。',
+                        style: Theme.of(context).textTheme.bodyLarge
+                            ?.copyWith(color: PlannerVisual.infoInk),
+                      ),
+                    ),
+                  ),
                   if (message != null)
                     Semantics(liveRegion: true, child: Text(message!)),
-                  Text(t('avoid'), style: const TextStyle(fontSize: 20)),
-                  Wrap(
-                    spacing: 6,
-                    children: widget.repo.catalog.foods.values
-                        .where((f) => !['salt', 'oil'].contains(f['group']))
-                        .map(
-                          (f) => plannerSurface(
-                            'control-29339',
-                            FilterChip(
-                              label: Text(f['name']),
-                              selected: (prefs['avoid'] as List).contains(
-                                f['id'],
+                  const SizedBox(height: 10),
+                  Card(
+                    color: PlannerVisual.caution,
+                    child: ExpansionTile(
+                      leading: const Icon(Icons.no_food_outlined,
+                        color: PlannerVisual.cautionInk),
+                      title: const Text('哪些食物不能吃？'),
+                      subtitle: Text(
+                        (prefs['avoid'] as List).isEmpty
+                          ? '如有过敏或忌口，点这里选择'
+                          : '已排除 ${(prefs['avoid'] as List).length} 种食材 · 点开检查',
+                      ),
+                      initiallyExpanded: (prefs['avoid'] as List).isNotEmpty,
+                      childrenPadding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                      children: [
+                        const Text('勾选后，系统不会把这些食材加入新餐单。'),
+                      Wrap(
+                        spacing: 6,
+                        children: widget.repo.catalog.foods.values
+                            .where((f) => !['salt', 'oil'].contains(f['group']))
+                            .map(
+                              (f) => plannerSurface(
+                                'control-29339',
+                                FilterChip(
+                                  label: Text(f['name']),
+                                  selected: (prefs['avoid'] as List).contains(
+                                    f['id'],
+                                  ),
+                                  onSelected: (v) => setState(() {
+                                    if (v) {
+                                      prefs['avoid'].add(f['id']);
+                                    } else {
+                                      prefs['avoid'].remove(f['id']);
+                                    }
+                                  }),
+                                ),
                               ),
-                              onSelected: (v) => setState(() {
-                                if (v) {
-                                  prefs['avoid'].add(f['id']);
-                                } else {
-                                  prefs['avoid'].remove(f['id']);
-                                }
-                              }),
-                            ),
-                          ),
-                        )
-                        .toList(),
+                            )
+                            .toList(),
+                      ),
+    
+                      ],
+                    ),
                   ),
-                  Text(t('simpleSlot')),
+                  const SizedBox(height: 14),
+                  Text('哪一餐想做得更简单？',
+                    style: Theme.of(context).textTheme.titleLarge),
                   plannerSurface(
                     'control-29953',
                     SegmentedButton<String>(
@@ -1636,7 +1668,9 @@ class _PlannerSettingsState extends State<PlannerSettings> {
                           setState(() => prefs['simple_slot'] = v.first),
                     ),
                   ),
-                  plannerSurface(
+                  Card(
+                    color: PlannerVisual.info,
+                    child: plannerSurface(
                     'control-30385',
                     SwitchListTile(
                       title: Text(t('quick')),
@@ -1644,7 +1678,10 @@ class _PlannerSettingsState extends State<PlannerSettings> {
                       onChanged: (v) => setState(() => prefs['quick'] = v),
                     ),
                   ),
-                  plannerSurface(
+                  ),
+                  Card(
+                    color: PlannerVisual.lunch,
+                    child: plannerSurface(
                     'control-30592',
                     SwitchListTile(
                       title: Text(t('budget')),
@@ -1654,7 +1691,10 @@ class _PlannerSettingsState extends State<PlannerSettings> {
                       ),
                     ),
                   ),
-                  plannerSurface(
+                  ),
+                  Card(
+                    color: PlannerVisual.breakfast,
+                    child: plannerSurface(
                     'control-30879',
                     SwitchListTile(
                       title: Text(t('spicy')),
@@ -1663,6 +1703,7 @@ class _PlannerSettingsState extends State<PlannerSettings> {
                         () => prefs['taste'] = v ? 'spicy' : 'light',
                       ),
                     ),
+                  ),
                   ),
                   plannerSurface(
                     'advanced-settings',
