@@ -426,6 +426,14 @@ void main() {
       });
       await tester.pumpAndSettle();
       expect(repo.state['preferences']['avoid'], isNotEmpty);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(SnackBar),
+          matching: find.textContaining('保存'),
+        ),
+        findsOneWidget,
+      );
       await tester.tap(find.byType(BackButton));
       await tester.pumpAndSettle();
       expect(find.text('open'), findsOneWidget);
