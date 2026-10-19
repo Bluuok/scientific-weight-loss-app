@@ -144,7 +144,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('我的计划'), findsOneWidget);
       expect(find.text('今天吃什么'), findsOneWidget);
-      expect(find.text('今天吃什么'), findsOneWidget);
+      expect(find.textContaining('0/3餐有记录'), findsWidgets);
+      expect(find.textContaining('本周记录：0/21餐 · 回顾0/7天'), findsOneWidget);
+      expect(find.textContaining('不代表营养达标或减重效果'), findsOneWidget);
       expect(
         tester.getRect(find.bySemanticsIdentifier('planner-open-today')).bottom,
         lessThan(780),
@@ -179,6 +181,12 @@ void main() {
       await tester.pumpAndSettle();
       expect((await repo.intakes.getAllIntakesDBO()).length, 1);
       expect(find.textContaining('已记录，可在'), findsOneWidget);
+      final undo = find.bySemanticsIdentifier('planner-complete-breakfast');
+      expect(
+        find.descendant(of: undo, matching: find.byType(OutlinedButton)),
+        findsOneWidget,
+        reason: 'Undo must be a lower-emphasis action after completion',
+      );
       await tester.ensureVisible(find.text('撤销记录').first);
       await tester.runAsync(() async {
         await tester.tap(find.text('撤销记录').first);
@@ -195,6 +203,7 @@ void main() {
         reason:
             'Returning from daily weight edits refreshes the cached profile',
       );
+      expect(find.textContaining('0/3餐有记录'), findsWidgets);
       expect(tester.takeException(), null);
     },
   );
