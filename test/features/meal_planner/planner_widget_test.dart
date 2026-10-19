@@ -145,8 +145,11 @@ void main() {
       expect(find.text('我的计划'), findsOneWidget);
       expect(find.text('今天吃什么'), findsOneWidget);
       expect(find.textContaining('0/3餐有记录'), findsWidgets);
-      expect(find.textContaining('本周记录：0/21餐 · 回顾0/7天'), findsOneWidget);
-      expect(find.textContaining('不代表营养达标或减重效果'), findsOneWidget);
+      expect(find.textContaining('0 / 21 餐已记录'), findsOneWidget);
+      expect(find.textContaining('不代表饮食或减重达标'), findsOneWidget);
+      expect(find.bySemanticsIdentifier('planner-today-meal-breakfast'), findsOneWidget);
+      expect(find.bySemanticsIdentifier('planner-today-meal-lunch'), findsOneWidget);
+      expect(find.bySemanticsIdentifier('planner-today-meal-dinner'), findsOneWidget);
       expect(
         tester.getRect(find.bySemanticsIdentifier('planner-open-today')).bottom,
         lessThan(780),
@@ -172,7 +175,7 @@ void main() {
       });
       await tester.tap(find.bySemanticsIdentifier('planner-open-today'));
       await tester.pumpAndSettle();
-      expect(find.text('查看全天营养估算'), findsOneWidget);
+      expect(find.text('今天的三餐'), findsOneWidget);
       await tester.ensureVisible(find.text('按这份吃完了').first);
       await tester.runAsync(() async {
         await tester.tap(find.text('按这份吃完了').first);
@@ -343,6 +346,13 @@ void main() {
         find.byType(DropdownButton<String>),
       );
       expect(dropdown.value, repo.state['plans'][0]['id']);
+      await tester.scrollUntilVisible(
+        find.text('查看一周安排'), 210,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text('查看一周安排'));
+      await tester.pumpAndSettle();
+      expect(find.byType(DropdownButton<String>), findsOneWidget);
       await tester.tap(find.text('怎么用'));
       await tester.pumpAndSettle();
       expect(find.textContaining('真正吃完后'), findsOneWidget);
@@ -361,7 +371,7 @@ void main() {
       final more = find.bySemanticsIdentifier('planner-more-breakfast');
       await tester.ensureVisible(more);
       await tester.tap(
-        find.descendant(of: more, matching: find.text('换餐或其他记录')),
+        find.descendant(of: more, matching: find.text('吃的不一样？换菜或修改记录')),
       );
       await tester.pumpAndSettle();
       final portion = find.bySemanticsIdentifier('planner-portion-breakfast');
