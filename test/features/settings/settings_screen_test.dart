@@ -90,7 +90,11 @@ void _register() {
 
 /// Pushes the settings route the way the app does, so the screen reads its
 /// arguments off a real `ModalRoute` rather than a constructor.
-Widget _app({Object? arguments}) => MaterialApp(
+Widget _app({Object? arguments, double scale = 1}) => MaterialApp(
+  builder: (context, child) => MediaQuery(
+    data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
+    child: child!,
+  ),
   localizationsDelegates: const [
     S.delegate,
     GlobalMaterialLocalizations.delegate,
@@ -244,4 +248,25 @@ void main() {
 
     expect(find.byType(AiAssistDialog), findsNothing);
   });
+  testWidgets('fixed light explanation fits a small screen with large text', (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(_app(scale: 2));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('浅色模式'), 200);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('浅色模式'));
+    await tester.pumpAndSettle();
+    expect(find.text('固定浅色模式'), findsOneWidget);
+    expect(find.textContaining('即使手机切换到深色模式'), findsOneWidget);
+    expect(find.byType(RadioGroup<AppThemeEntity>), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.ensureVisible(find.text('知道了'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('知道了'));
+    await tester.pumpAndSettle();
+    expect(find.text('固定浅色模式'), findsNothing);
+  });
+
 }

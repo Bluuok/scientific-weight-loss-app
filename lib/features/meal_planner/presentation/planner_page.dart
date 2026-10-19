@@ -178,12 +178,14 @@ class _PlannerPageState extends State<PlannerPage> {
     }
   }
 
-  Future<void> _openDay(Json day) async {
+  Future<void> _openDay(Json day, {String? initialSlot}) async {
     await Navigator.push(
       context,
       MaterialPageRoute<void>(
         settings: const RouteSettings(name: NavigationOptions.plannerDayRoute),
-        builder: (_) => PlannerDayPage(repo: repo, day: copyJson(day)),
+        builder: (_) => PlannerDayPage(
+          repo: repo, day: copyJson(day), initialSlot: initialSlot,
+        ),
       ),
     );
     final user = await repo.users.getUserData();
@@ -445,6 +447,14 @@ class _PlannerPageState extends State<PlannerPage> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 8),
+                      plannerButton(
+                        'open-today',
+                        mealRecordCount(today) == 3
+                            ? '查看今天的记录和食谱'
+                            : '查看食谱 · 吃完记一下',
+                        busy ? null : () => _openDay(copyJson(todayMeal)),
+                      ),
                       const SizedBox(height: 14),
                       ...List<Json>.from(todayMeal['meals']).map(
                         (m) => Padding(
@@ -454,18 +464,13 @@ class _PlannerPageState extends State<PlannerPage> {
                             title: t(m['slot']),
                             name: repo.catalog.recipes[m['recipe_id']]!['name'] as String,
                             status: (records['$today/${m['slot']}']?['status'] ?? 'pending') as String,
-                            onTap: busy ? null : () => _openDay(copyJson(todayMeal)),
+                            onTap: busy ? null : () => _openDay(
+                              copyJson(todayMeal), initialSlot: m['slot'] as String,
+                            ),
                           ),
                         ),
                       ),
                       const SizedBox(height: 3),
-                      plannerButton(
-                        'open-today',
-                        mealRecordCount(today) == 3
-                            ? '查看今天的记录和食谱'
-                            : '查看食谱 · 吃完记一下',
-                        busy ? null : () => _openDay(copyJson(todayMeal)),
-                      ),
                       Text(
                         hasRecord(today, 'review') ? '今日回顾已经保存' : '吃完三餐后，可以写一句今天的感受',
                         style: Theme.of(context).textTheme.bodySmall
@@ -543,7 +548,8 @@ class _PlannerPageState extends State<PlannerPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('本周记录情况',
+                            Text(days.any((day) => day['date'] == today)
+                                ? '本周记录情况' : '所选一周记录情况',
                               style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(color: PlannerVisual.infoInk)),
                             Text('$weekMealsRecorded / 21 餐已记录 · '
@@ -826,12 +832,18 @@ class _PlannerPageState extends State<PlannerPage> {
 class PlannerDayPage extends StatefulWidget {
   final PlannerRepository repo;
   final Json day;
-  const PlannerDayPage({super.key, required this.repo, required this.day});
+  final String? initialSlot;
+  const PlannerDayPage({
+    super.key, required this.repo, required this.day, this.initialSlot,
+  });
   @override
   State<PlannerDayPage> createState() => _PlannerDayPageState();
 }
 
 class _PlannerDayPageState extends State<PlannerDayPage> {
+  final _mealKeys = <String, GlobalKey>{
+    for (final slot in ['breakfast', 'lunch', 'dinner']) slot: GlobalKey(),
+  };
   bool busy = false;
   String? error, savingSlot;
   late final AppLifecycleListener _lifecycle;
@@ -844,6 +856,16 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
         if (mounted) setState(() {});
       },
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || (widget.repo.enforceMedicalScreen &&
+          widget.repo.medicalSafetyIssue != null)) {
+        return;
+      }
+      final target = _mealKeys[widget.initialSlot]?.currentContext;
+      if (target != null) {
+        unawaited(Scrollable.ensureVisible(target, alignment: 0));
+      }
+    });
   }
 
   @override
@@ -960,6 +982,7 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
     final date = widget.day['date'] as String;
     final n = repo.catalog.dayNutrition(widget.day);
     final records = repo.state['records'];
+    final isToday = date == localDay(repo.now());
     final futureDay = date.compareTo(localDay(repo.now())) > 0;
     final medicalBlocked = repo.enforceMedicalScreen &&
         repo.medicalSafetyIssue != null;
@@ -969,11 +992,13 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
     ).length;
     return Scaffold(
       backgroundColor: PlannerVisual.background,
-      appBar: AppBar(title: Text('$date · 三餐食谱')),
+      appBar: AppBar(title: Text(date)),
       body: Semantics(
         identifier: 'planner-day-list',
-        child: ListView(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
+          child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Card(
               color: PlannerVisual.info,
@@ -988,7 +1013,7 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('今天的三餐',
+                          Text(isToday ? '今天的三餐' : '这一天的三餐',
                             style: Theme.of(context).textTheme.titleLarge
                                 ?.copyWith(color: PlannerVisual.infoInk)),
                           Text('$recordedMeals/3餐有记录 · 先看做法，吃过再打卡',
@@ -1019,13 +1044,13 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text('今天三餐都有记录了',
+                      Text(isToday ? '今天三餐都有记录了' : '这一天的三餐都有记录了',
                         style: Theme.of(context).textTheme.titleMedium
                           ?.copyWith(color: PlannerVisual.lunchInk)),
                       const Text('可以写一句今天吃得怎么样，也可以稍后再写。'),
                       plannerButton(
                         'quick-review',
-                        '写一句今天的感受',
+                        isToday ? '写一句今天的感受' : '写一句当天的感受',
                         busy ? null : () async {
                           final note = await input(t('reviewHint'));
                           if (note != null) {
@@ -1075,6 +1100,7 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
               return Padding(
                 padding: const EdgeInsets.only(top: 12),
                 child: Card(
+                  key: _mealKeys[meal['slot']],
                   color: PlannerVisual.mealColor(meal['slot'] as String),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -1166,8 +1192,11 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                               ? '到这一天再记录'
                               : status != 'pending'
                               ? t('undo')
+                              : medicalBlocked
+                              ? '先查看健康风险提示'
                               : t('complete'),
-                          editable
+                          !futureDay && !busy &&
+                                  (status != 'pending' || !medicalBlocked)
                               ? () => record(
                                   meal,
                                   status != 'pending' ? 'pending' : 'completed',
@@ -1406,7 +1435,7 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                     IconButton(
                       tooltip: '撤销今日回顾',
                       icon: const Icon(Icons.undo),
-                      onPressed: editable
+                      onPressed: !futureDay && !busy
                           ? () => record(null, 'pending')
                           : null,
                     ),
@@ -1424,6 +1453,7 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
               primary: false,
             ),
           ],
+          ),
         ),
       ),
     );

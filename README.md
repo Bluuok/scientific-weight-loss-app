@@ -88,6 +88,8 @@ flowchart LR
 | 记录协调 | 资料隔离、生成一致性、已执行餐次保护和日记同步 | [planner_repository.dart](lib/features/meal_planner/data/planner_repository.dart) |
 | 可执行做法 | 从食谱原料和份量生成克数与步骤 | [recipe_steps.dart](lib/features/meal_planner/domain/recipe_steps.dart) |
 
+上游保留的文本 / 图片 AI 辅助是另一条可选流程，见 [AI 辅助架构](docs/ai-architecture.md)。
+
 未配置服务时可使用明确标识的备用餐单；存在可行性或校验问题时不会悄悄放宽规则。备用模板与 AI 生成在界面上区分显示。
 
 ## 健康与数据边界
@@ -107,6 +109,7 @@ flowchart LR
 | :-- | :-- |
 | 家庭资料与日记 | 保存在本机，沿用上游加密存储机制 |
 | AI 调用 | 经服务披露确认后，将必要的资料、偏好和近期记录摘要发送给所选服务商 |
+| 自定义 AI 服务 | 客户端仅访问你填写的服务地址；点击获取模型列表和分析食物时都会发出请求。客户端不在这条路径额外请求第三方，服务端的存储或转发由其部署决定 |
 | API Key | 由使用者自行配置，应用内配置使用系统安全存储；私有构建可读取本地 `.env` |
 | 公开源码与 CI | 仅提供占位配置，不提供共享 API Key，不提交私有安装包或真实资料 |
 

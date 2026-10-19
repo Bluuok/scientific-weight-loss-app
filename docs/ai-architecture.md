@@ -3,7 +3,7 @@
 This page documents **how the optional AI meal-logging feature works** — what happens between
 typing a meal and seeing it in your diary, where a request goes, and what the app refuses to do.
 
-It is the companion to the README's [Privacy](../README.md#privacy) section. The README holds the
+It is the companion to the README's [Privacy](../README.md#隐私与密钥) section. The README holds the
 **promise**: which destinations exist, what each one keeps, and what the Experimental label means.
 This page holds the **mechanism**. Where the two touch, the README is authoritative.
 
@@ -320,7 +320,7 @@ sent nothing until you read a meal: their model lists are compiled in, so there 
 ask them for.
 
 Most of what each destination *keeps* is a policy question rather than a mechanism one, and it
-lives in the README's [Privacy](../README.md#privacy) section — but two of the four requests carry
+lives in the README's [Privacy](../README.md#隐私与密钥) section — but two of the four requests carry
 a retention instruction of their own. The direct OpenAI call sends `store: false`, because
 the Responses API retains request and response content by default, so saying nothing is not the
 same as opting out. The OpenRouter routing block sends
@@ -567,5 +567,5 @@ address**. An IPv4-only check would never have seen where the connection actuall
 ---
 
 > **Where the privacy claims live.** What each destination receives and how long it keeps it is in
-> the README's [Privacy](../README.md#privacy) section, kept there so it is reviewed alongside the
+> the README's [Privacy](../README.md#隐私与密钥) section, kept there so it is reviewed alongside the
 > code that makes it true. This page describes mechanism and links to it rather than restating it.

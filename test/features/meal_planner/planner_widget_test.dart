@@ -145,8 +145,6 @@ void main() {
       expect(find.text('我的计划'), findsOneWidget);
       expect(find.text('今天吃什么'), findsOneWidget);
       expect(find.textContaining('0/3餐有记录'), findsWidgets);
-      expect(find.textContaining('0 / 21 餐已记录'), findsOneWidget);
-      expect(find.textContaining('不代表饮食或减重达标'), findsOneWidget);
       expect(find.bySemanticsIdentifier('planner-today-meal-breakfast'), findsOneWidget);
       expect(find.bySemanticsIdentifier('planner-today-meal-lunch'), findsOneWidget);
       expect(find.bySemanticsIdentifier('planner-today-meal-dinner'), findsOneWidget);
@@ -244,6 +242,8 @@ void main() {
       await tester.pumpWidget(app(PlannerDayPage(repo: repo, day: day)));
       await tester.pumpAndSettle();
       expect(find.text('到这一天再记录'), findsWidgets);
+      expect(find.text('这一天的三餐'), findsOneWidget);
+      expect(find.text('今天的三餐'), findsNothing);
       final button = tester.widget<FilledButton>(
         find.descendant(
           of: find.bySemanticsIdentifier('planner-complete-breakfast'),
@@ -430,7 +430,10 @@ void main() {
         find.bySemanticsIdentifier('planner-save-settings'),
         findsOneWidget,
       );
+      await tester.tap(find.text('哪些食物不能吃？'));
+      await tester.pumpAndSettle();
       final chip = find.byType(FilterChip).first;
+      await tester.ensureVisible(chip);
       await tester.tap(chip);
       await tester.pumpAndSettle();
       await tester.tap(find.byType(BackButton));
@@ -517,7 +520,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.bySemanticsIdentifier('planner-quick-review'), findsOneWidget);
     expect(find.textContaining('今天三餐都有记录了'), findsOneWidget);
-    await tester.tap(find.bySemanticsIdentifier('planner-quick-review'));
+    await tester.runAsync(() async {
+      await tester.tap(find.bySemanticsIdentifier('planner-quick-review'));
+    });
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), '今天胃口不错');
     await tester.runAsync(() async {
@@ -528,6 +533,87 @@ void main() {
     expect(repo.state['records']["${day['date']}/review"]['status'], 'completed');
     expect(repo.state['records']["${day['date']}/review"]['notes'], '今天胃口不错');
     expect(tester.takeException(), null);
+  });
+
+  for (final scale in [1.0, 2.0]) {
+    for (final slot in ['lunch', 'dinner']) {
+      testWidgets('home $slot card focuses that meal at text scale $scale', (tester) async {
+        tester.view.physicalSize = const Size(360, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.runAsync(() async {
+          await tester.pumpWidget(app(const PlannerPage(), scale: scale));
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        });
+        await tester.pumpAndSettle();
+        final row = find.bySemanticsIdentifier('planner-today-meal-$slot');
+        await tester.ensureVisible(row);
+        await tester.pumpAndSettle();
+        await tester.tap(row);
+        await tester.pumpAndSettle();
+        final action = find.bySemanticsIdentifier('planner-complete-$slot');
+        expect(tester.getRect(action).overlaps(const Rect.fromLTWH(0, 56, 360, 744)), isTrue,
+          reason: 'Opening a meal must bring its action into the viewport');
+        expect(repo.state['records'], isEmpty);
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
+
+  testWidgets('weekly tools stay discoverable and open the grocery list', (tester) async {
+    await tester.runAsync(() async {
+      await tester.pumpWidget(app(const PlannerPage()));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsIdentifier('planner-week-select'), findsNothing);
+    await tester.scrollUntilVisible(find.text('查看一周安排'), 200);
+    expect(find.textContaining('0 / 21 餐已记录'), findsOneWidget);
+    expect(find.textContaining('不代表饮食或减重达标'), findsOneWidget);
+    await tester.tap(find.text('查看一周安排'));
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsIdentifier('planner-week-select'), findsOneWidget);
+    final grocery = find.bySemanticsIdentifier('planner-grocery-list');
+    await tester.ensureVisible(grocery);
+    await tester.pumpAndSettle();
+    await tester.tap(grocery);
+    await tester.pumpAndSettle();
+    expect(find.text('本周采购清单'), findsOneWidget);
+    expect(find.textContaining('不作为整周预算'), findsOneWidget);
+    await tester.tap(find.text('关闭'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('risk blocks new planned meals while keeping mistaken records reversible', (tester) async {
+    final day = copyJson(repo.state['plans'][0]['plan']['days'][0]);
+    await tester.runAsync(() async {
+      await repo.record(day['date'], Map<String, dynamic>.from(day['meals'][0]), 'completed');
+    });
+    final gated = PlannerRepository(repo.db, repo.intakes, repo.users,
+      repo.weights, repo.tracked, repo.service, enforceMedicalScreen: true);
+    await tester.runAsync(gated.initialize);
+    await tester.pumpWidget(app(PlannerDayPage(repo: gated, day: day, initialSlot: 'lunch')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('请先完成健康风险核对'), findsOneWidget);
+    final undo = find.bySemanticsIdentifier('planner-complete-breakfast');
+    expect(tester.widget<OutlinedButton>(find.descendant(of: undo,
+      matching: find.byType(OutlinedButton))).onPressed, isNotNull);
+    final lunch = find.bySemanticsIdentifier('planner-complete-lunch');
+    expect(tester.widget<FilledButton>(find.descendant(of: lunch,
+      matching: find.byType(FilledButton))).onPressed, isNull);
+    await tester.ensureVisible(undo);
+    await tester.pumpAndSettle();
+    await tester.runAsync(() async {
+      await tester.tap(undo);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+    await tester.pumpAndSettle();
+    expect(await repo.intakes.getAllIntakesDBO(), isEmpty);
+    expect(gated.state['records']["${day['date']}/breakfast"]['status'], 'pending');
+    expect(gated.medicalSafetyIssue, isNotNull);
+    expect(tester.takeException(), isNull);
   });
 
 }

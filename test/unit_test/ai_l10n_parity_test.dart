@@ -267,21 +267,21 @@ void main() {
     // parties, stating the rule rather than a host.
     final readme = File('README.md').readAsStringSync();
     final privacy = readme.substring(
-      readme.indexOf('**What leaves your device.**'),
+      readme.indexOf('## 隐私与密钥'),
     );
 
     expect(
       privacy,
-      contains('The address you entered, and nothing else'),
+      contains('客户端仅访问你填写的服务地址'),
       reason: 'the rule is the row; there is no party to put there',
     );
     // Both moments, because the address is contacted by an explicit fetch as
     // well as by sending a meal — a table that named only the second would
     // understate when the app talks to the machine.
-    expect(privacy, contains('Load models'));
+    expect(privacy, contains('获取模型列表和分析食物时都会发出请求'));
     expect(
       privacy,
-      contains('No third party receives anything on this path'),
+      contains('客户端不在这条路径额外请求第三方'),
       reason: 'the honest claim, which is not "it never leaves"',
     );
   });

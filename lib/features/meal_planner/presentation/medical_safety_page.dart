@@ -67,7 +67,7 @@ class _MedicalSafetyPageState extends State<MedicalSafetyPage> {
                   style: Theme.of(context).textTheme.titleLarge
                       ?.copyWith(color: PlannerVisual.infoInk)),
                 const SizedBox(height: 6),
-                Text('已选择 $confirmed / 7 项 · 不知道就选“不确定”',
+                Text('已明确 $confirmed / 7 项 · 不清楚就保留“不确定”',
                   style: Theme.of(context).textTheme.bodyMedium
                       ?.copyWith(color: PlannerVisual.infoInk)),
                 const SizedBox(height: 10),
