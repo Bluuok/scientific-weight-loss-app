@@ -18,6 +18,7 @@ import 'package:opennutritracker/features/add_meal/domain/entity/meal_nutriments
 import '../domain/planner.dart';
 import '../domain/nutrition_source_audit.dart';
 import '../domain/monthly_direction.dart';
+import '../domain/grocery_budget.dart';
 import '../domain/cycle_progress_review.dart';
 import '../domain/weight_loss_eligibility.dart';
 import '../domain/medical_safety_screen.dart';
@@ -133,6 +134,36 @@ class PlannerRepository {
       budget: prefs['budget'] == 'economy' ? 'economy' : 'normal',
     );
   }
+
+  /// User-entered local prices, in RMB per 市斤 (500g), scoped to this profile.
+  Map<String, dynamic> get unitPrices => Map<String, dynamic>.from(
+    state['unit_prices_yuan_per_500g'] ?? const <String, dynamic>{},
+  );
+
+  Json groceryEstimate(Json plan) =>
+      GroceryBudget.calculate(catalog, plan, unitPrices);
+
+  Future<void> setUnitPrice(String foodId, double? yuanPer500g) =>
+      _lock.synchronized(() async {
+        if (!catalog.foods.containsKey(foodId) ||
+            (yuanPer500g != null &&
+                (!yuanPer500g.isFinite ||
+                 yuanPer500g < 0.01 ||
+                 yuanPer500g > 2000))) {
+          throw const PlanRejected('无效食材或菜价；请填写每斤人民币金额');
+        }
+        final s = state;
+        final prices = Map<String, dynamic>.from(
+          s['unit_prices_yuan_per_500g'] ?? const <String, dynamic>{},
+        );
+        if (yuanPer500g == null) {
+          prices.remove(foodId);
+        } else {
+          prices[foodId] = yuanPer500g;
+        }
+        s['unit_prices_yuan_per_500g'] = prices;
+        await _save(s);
+      });
 
   Future<void> preferences(Json prefs) => _lock.synchronized(() async {
     final s = state;
