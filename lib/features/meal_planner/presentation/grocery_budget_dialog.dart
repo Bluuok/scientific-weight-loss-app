@@ -20,22 +20,22 @@ class _GroceryBudgetDialogState extends State<GroceryBudgetDialog> {
   String? error;
 
   Future<void> _editPrice(Json item) async {
-    final controller = TextEditingController(
-      text: item['yuan_per_500g'] == null
-          ? ''
-          : (item['yuan_per_500g'] as num).toString(),
-    );
+    var priceText = item['yuan_per_500g'] == null
+        ? ''
+        : (item['yuan_per_500g'] as num).toString();
     final result = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        scrollable: true,
         title: Text('设置${item['name']}的当地价格'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('人民币元 / 500克（1市斤）；请自行核对当地实际菜价。'),
-            TextField(
-              controller: controller,
+            TextFormField(
+              initialValue: priceText,
+              onChanged: (value) => priceText = value,
               autofocus: true,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: const InputDecoration(labelText: '每斤价格'),
@@ -52,14 +52,13 @@ class _GroceryBudgetDialogState extends State<GroceryBudgetDialog> {
             child: const Text('清除价格'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, controller.text),
+            onPressed: () => Navigator.pop(dialogContext, priceText),
             child: const Text('保存'),
           ),
         ],
       ),
     );
     if (result == null || !mounted) {
-      controller.dispose();
       return;
     }
     try {
@@ -73,8 +72,6 @@ class _GroceryBudgetDialogState extends State<GroceryBudgetDialog> {
       if (mounted) setState(() => error = null);
     } catch (e) {
       if (mounted) setState(() => error = e.toString());
-    } finally {
-      controller.dispose();
     }
   }
 
@@ -88,8 +85,7 @@ class _GroceryBudgetDialogState extends State<GroceryBudgetDialog> {
       content: SizedBox(
         width: 560,
         height: 500,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: ListView(
           children: [
             const Text('按7天计划的原料生重/干重合计。重量不等于实际购买重量。'),
             Text(
@@ -101,11 +97,9 @@ class _GroceryBudgetDialogState extends State<GroceryBudgetDialog> {
             if (error != null)
               Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
             const Divider(),
-            Expanded(
-              child: ListView.builder(
-                itemCount: items.length,
-                itemBuilder: (context, index) {
-                  final item = items[index];
+            for (final item in items)
+              Builder(
+                builder: (context) {
                   final grams = (item['grams'] as num).toStringAsFixed(1);
                   final price = item['yuan_per_500g'] as num?;
                   final subtotal = item['estimated_yuan'] as num?;
@@ -125,7 +119,6 @@ class _GroceryBudgetDialogState extends State<GroceryBudgetDialog> {
                   );
                 },
               ),
-            ),
             const Text(
               '油盐一并计入；未计算包装、去皮损耗、运输和菜市场实际付款。'
               '已记录的替换餐不自动改变原计划采购清单。',
