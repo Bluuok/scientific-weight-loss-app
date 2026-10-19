@@ -19,6 +19,7 @@ import '../domain/planner.dart';
 import '../domain/nutrition_source_audit.dart';
 import '../domain/monthly_direction.dart';
 import '../domain/weight_loss_eligibility.dart';
+import '../domain/medical_safety_screen.dart';
 import 'meal_planning_service.dart';
 import 'authority_sources_service.dart';
 
@@ -30,6 +31,7 @@ class PlannerRepository {
   final AddTrackedDayUsecase tracked;
   final MealPlanningService service;
   final ConfigRepository? config;
+  final bool enforceMedicalScreen;
   final DateTime Function() now;
   final Lock _lock = Lock();
   late FoodCatalog catalog;
@@ -41,6 +43,7 @@ class PlannerRepository {
     this.tracked,
     this.service, {
     this.config,
+    this.enforceMedicalScreen = false,
     DateTime Function()? now,
   }) : now = now ?? DateTime.now;
   Json get state =>
@@ -90,7 +93,22 @@ class PlannerRepository {
     return results;
   }
 
+  String? get medicalSafetyIssue =>
+      MedicalSafetyScreen.issue(state['medical_screen']);
+
+  Future<void> saveMedicalScreen(Json answers) =>
+      _lock.synchronized(() async {
+        final screen = MedicalSafetyScreen.normalize(answers);
+        final s = state;
+        s['medical_screen'] = screen;
+        await _save(s);
+      });
+
   Future<PlanRules> rules({String? simpleSlot}) async {
+    if (enforceMedicalScreen) {
+      final issue = medicalSafetyIssue;
+      if (issue != null) throw PlanRejected(issue);
+    }
     final user = await users.getUserData();
     final issue = weightLossIssue(user);
     if (issue != null) throw PlanRejected(issue);
@@ -253,6 +271,7 @@ class PlannerRepository {
     final s = state;
     final originProfileId = db.activeProfileId;
     final preferencesStamp = jsonEncode(s['preferences']);
+    final medicalStamp = jsonEncode(s['medical_screen']);
     String profileStamp(UserEntity user) => jsonEncode([
       user.birthday.toIso8601String(),
       user.heightCM,
@@ -283,6 +302,9 @@ class PlannerRepository {
             ? ((s['plans'] as List).isEmpty ? 'initial' : 'next_week')
             : 'adjust_remaining',
         'profile': {
+          'self_reported_risk_screen': enforceMedicalScreen
+              ? 'no_reported_risk_flags_not_medical_clearance'
+              : 'not_collected',
           'age_approx': user.age,
           'sex': user.gender.name,
           'height_cm': user.heightCM,
@@ -343,6 +365,15 @@ class PlannerRepository {
         throw const PlanRejected('生成期间身体资料已更新，结果未保存，请重新生成。');
       }
       final latest = state;
+      if (enforceMedicalScreen) {
+        final issue = MedicalSafetyScreen.issue(latest['medical_screen']);
+        if (issue != null) throw PlanRejected(issue);
+        if (jsonEncode(latest['medical_screen']) != medicalStamp) {
+          throw const PlanRejected(
+            '生成期间健康风险核对已修改；请重新生成，避免使用旧方案。',
+          );
+        }
+      }
       if (jsonEncode(latest['preferences']) != preferencesStamp) {
         throw const PlanRejected('生成期间偏好或忌口已更改，结果未保存，请重新生成。');
       }

@@ -219,6 +219,7 @@ Future<void> initLocator() async {
   locator.registerLazySingleton<PlannerRepository>(() => PlannerRepository(
     locator(), locator(), locator(), locator(), locator(),
     MealPlanningService(PlanningCredentials()), config: locator(),
+    enforceMedicalScreen: true,
   ));
 
   // BLoCs
