@@ -16,6 +16,7 @@ import 'package:opennutritracker/core/utils/calc/tdee_calc.dart';
 import 'package:opennutritracker/features/add_meal/domain/entity/meal_entity.dart';
 import 'package:opennutritracker/features/add_meal/domain/entity/meal_nutriments_entity.dart';
 import '../domain/planner.dart';
+import '../domain/nutrition_source_audit.dart';
 import '../domain/monthly_direction.dart';
 import '../domain/weight_loss_eligibility.dart';
 import '../domain/medical_safety_screen.dart';
@@ -61,6 +62,7 @@ class PlannerRepository {
           )
           as Json,
     );
+    NutritionSourceAudit.validate(catalog);
     await _lock.synchronized(() async {
       final s = state;
       // Durable write-ahead intent: repair interrupted cross-box diary writes after restart.
