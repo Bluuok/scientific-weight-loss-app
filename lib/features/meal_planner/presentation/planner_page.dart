@@ -961,60 +961,131 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
     final n = repo.catalog.dayNutrition(widget.day);
     final records = repo.state['records'];
     final futureDay = date.compareTo(localDay(repo.now())) > 0;
-    final editable = !futureDay && !busy;
+    final medicalBlocked = repo.enforceMedicalScreen &&
+        repo.medicalSafetyIssue != null;
+    final editable = !futureDay && !busy && !medicalBlocked;
+    final recordedMeals = ['breakfast', 'lunch', 'dinner'].where(
+      (slot) => (records['$date/$slot']?['status'] ?? 'pending') != 'pending',
+    ).length;
     return Scaffold(
-      appBar: AppBar(title: Text(date)),
+      backgroundColor: PlannerVisual.background,
+      appBar: AppBar(title: Text('$date · 三餐食谱')),
       body: Semantics(
         identifier: 'planner-day-list',
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            const Text('先看食材和做法，真正吃完后再记录。点错可以撤销。'),
+            Card(
+              color: PlannerVisual.info,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    const Icon(Icons.checklist_rounded,
+                        size: 32, color: PlannerVisual.infoInk),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('今天的三餐',
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(color: PlannerVisual.infoInk)),
+                          Text('$recordedMeals/3餐有记录 · 先看做法，吃过再打卡',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: PlannerVisual.infoInk)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             if (busy) const LinearProgressIndicator(),
             if (error != null)
               Text(
                 error!,
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
-            if (date.compareTo(localDay(repo.now())) > 0)
-              const Text('这是未来的餐单，可以先查看或换餐，到当天再记录吃了什么。'),
-            plannerSurface(
-              'nutrition-details',
-              ExpansionTile(
-                title: const Text('查看全天营养估算'),
-                children: [
-                  Text(
-                    '${t('planned')}: ${n['kcal'].round()} 千卡 · ${t('protein')} ${n['protein'].toStringAsFixed(1)} 克\n'
-                    '${t('sodium')} ${n['sodium'].round()} 毫克 · ${t('saltEquivalent')} ${(n['sodium'] * .0025).toStringAsFixed(1)} 克 · ${t('oil')} ${n['oil'].toStringAsFixed(1)} 克',
-                    style: const TextStyle(fontSize: 18),
+            if (futureDay)
+              const Text('这是未来的餐单；可以先看菜谱，到当天再记录。'),
+            if (medicalBlocked)
+              Card(
+                color: PlannerVisual.caution,
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        repo.medicalSafetyIssue!,
+                        style: const TextStyle(
+                          color: PlannerVisual.cautionInk, fontSize: 18),
+                      ),
+                      plannerSecondaryButton(
+                        'day-medical-risk-check',
+                        '重新核对健康风险',
+                        busy ? null : () async {
+                          await Navigator.push<void>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => MedicalSafetyPage(repo: repo),
+                            ),
+                          );
+                          if (mounted) setState(() {});
+                        },
+                      ),
+                    ],
                   ),
-                  Text(t('unknownNote')),
-                ],
+                ),
               ),
-            ),
             ...List<Json>.from(widget.day['meals']).map((meal) {
               final recipe = repo.catalog.recipes[meal['recipe_id']]!;
               final status =
                   records['$date/${meal['slot']}']?['status'] ?? 'pending';
               final note = records['$date/${meal['slot']}']?['notes'] ?? '';
-              return Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${t(meal['slot'])} · ${t(status)}',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+              return Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Card(
+                  color: PlannerVisual.mealColor(meal['slot'] as String),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              PlannerVisual.mealIcon(meal['slot'] as String),
+                              size: 30,
+                              color: PlannerVisual.mealInk(meal['slot'] as String),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(t(meal['slot']),
+                                    style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(color: PlannerVisual.mealInk(
+                                          meal['slot'] as String))),
+                                  Text(
+                                    PlannerVisual.statusText(status as String),
+                                    style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(color: PlannerVisual.mealInk(
+                                          meal['slot'] as String))),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      Text(
-                        recipe['name'],
-                        style: const TextStyle(fontSize: 19),
-                      ),
-                      if (meal['simple']) Text(t('simpleMeal')),
+                        const SizedBox(height: 8),
+                        Text(recipe['name'],
+                          style: Theme.of(context).textTheme.titleLarge
+                            ?.copyWith(color: PlannerVisual.ink)),
+                        if (meal['simple'])
+                          const Text('这是一顿简洁餐，照着做就行。'),
                       Text(
                         '本餐用油 ${RecipeSteps.grams('oil', ((recipe['ingredients']['oil'] ?? 0) as num) * meal['portion'])}克 · 食盐 ${RecipeSteps.grams('salt', ((recipe['ingredients']['salt'] ?? 0) as num) * meal['portion'])}克',
                         style: const TextStyle(
@@ -1025,7 +1096,8 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                       plannerSurface(
                         'control-16208',
                         ExpansionTile(
-                          title: const Text('食材称量与详细做法'),
+                          leading: const Icon(Icons.menu_book_outlined),
+                          title: const Text('看做法和每样食材的重量'),
                           children: [
                             ...((recipe['ingredients'] as Map).entries.map((e) {
                               final food = repo.catalog.foods[e.key]!;
@@ -1079,7 +1151,7 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                       plannerSurface(
                         'more-${meal['slot']}',
                         ExpansionTile(
-                          title: const Text('换餐或其他记录'),
+                          title: const Text('吃的不一样？换菜或修改记录'),
                           children: [
                             Wrap(
                               spacing: 8,
@@ -1260,9 +1332,29 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                     ],
                   ),
                 ),
-              );
+              ),
+            );
             }),
+            const SizedBox(height: 14),
             Card(
+              color: Colors.white,
+              child: plannerSurface(
+                'nutrition-details',
+              ExpansionTile(
+                title: const Text('查看全天营养估算'),
+                children: [
+                  Text(
+                    '${t('planned')}: ${n['kcal'].round()} 千卡 · ${t('protein')} ${n['protein'].toStringAsFixed(1)} 克\n'
+                    '${t('sodium')} ${n['sodium'].round()} 毫克 · ${t('saltEquivalent')} ${(n['sodium'] * .0025).toStringAsFixed(1)} 克 · ${t('oil')} ${n['oil'].toStringAsFixed(1)} 克',
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                  Text(t('unknownNote')),
+                ],
+              ),
+            ),
+            ),
+            Card(
+              color: PlannerVisual.info,
               child: plannerSurface(
                 'control-24402',
                 ListTile(
@@ -1296,11 +1388,12 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
             ),
             plannerButton(
               'weight',
-              t('weightHistory'),
+              '查看体重记录',
               () => Navigator.pushNamed(
                 context,
                 NavigationOptions.weightHistoryRoute,
               ),
+              primary: false,
             ),
           ],
         ),
