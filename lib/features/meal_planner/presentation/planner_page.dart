@@ -13,6 +13,7 @@ import '../domain/weight_loss_eligibility.dart';
 import 'planner_text.dart';
 import 'grocery_budget_dialog.dart';
 import 'medical_safety_page.dart';
+import 'planner_visual.dart';
 
 Widget plannerSurface(String id, Widget child) =>
     Semantics(identifier: 'planner-$id', child: child);
@@ -275,6 +276,7 @@ class _PlannerPageState extends State<PlannerPage> {
       (day) => hasRecord(day['date'] as String, 'review'),
     ).length;
     return Scaffold(
+      backgroundColor: PlannerVisual.background,
       appBar: AppBar(
         title: Text(t('title')),
         actions: [
@@ -309,11 +311,25 @@ class _PlannerPageState extends State<PlannerPage> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            const Text(
-              'AI 科学饮食计划',
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '每天吃好三顿饭',
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '先看今天的菜，吃过再记录。其他安排放在下面。',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: PlannerVisual.muted,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const Text('每天看餐单，吃完记一下。'),
             if (busy) ...[
               const LinearProgressIndicator(),
               const Text('AI 正在安排餐单，请稍候。完成后会显示在这里。'),
@@ -334,10 +350,23 @@ class _PlannerPageState extends State<PlannerPage> {
               ),
             if (_profileIssue != null)
               Card(
+                color: PlannerVisual.caution,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Text(
-                    '$_profileIssue\n如果给家人使用，请先添加或切换家人资料。你的饮食记录仍可使用。',
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.info_outline,
+                          color: PlannerVisual.cautionInk, size: 30),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          '先检查家人的身体资料\n$_profileIssue\n原有饮食记录不会丢失。',
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(color: PlannerVisual.cautionInk),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -353,67 +382,94 @@ class _PlannerPageState extends State<PlannerPage> {
             if (_profileIssue == null &&
                 repo.enforceMedicalScreen &&
                 repo.medicalSafetyIssue != null)
-              plannerSecondaryButton(
-                'medical-risk-check',
-                repo.medicalSafetyIssue == null
-                    ? '查看或更新健康风险核对'
-                    : '开始前必填：健康风险核对',
-                busy ? null : _openMedicalSafety,
-              ),
-            if (_profileIssue == null &&
-                repo.enforceMedicalScreen &&
-                repo.medicalSafetyIssue != null)
               Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Text(repo.medicalSafetyIssue!),
-                ),
-              ),
-            if (_profileIssue == null && todayMeal != null)
-              Card(
-                color: Theme.of(context).colorScheme.surfaceContainerLow,
+                color: PlannerVisual.caution,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        '今天吃什么',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        '$today · ${mealRecordCount(today)}/3餐有记录'
-                        ' · ${hasRecord(today, 'review') ? '已回顾' : '未回顾'}',
+                      Row(
+                        children: [
+                          const Icon(Icons.health_and_safety_outlined,
+                              color: PlannerVisual.cautionInk, size: 30),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text('第1步：先确认身体情况',
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(color: PlannerVisual.cautionInk)),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 8),
-                      ...List<Json>.from(todayMeal['meals']).map(
-                        (m) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "${t(m['slot'])} · ${repo.catalog.recipes[m['recipe_id']]!['name']}",
-                                style: Theme.of(context).textTheme.bodyLarge,
-                              ),
-                              Text(
-                                '记录状态：${t(records['$today/${m['slot']}']?['status'] ?? 'pending')}',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      Text(repo.medicalSafetyIssue!,
+                        style: Theme.of(context).textTheme.bodyLarge
+                            ?.copyWith(color: PlannerVisual.cautionInk)),
+                      const SizedBox(height: 8),
                       SizedBox(
                         width: double.infinity,
                         child: plannerButton(
-                          'open-today',
-                          '查看今天餐单并记录',
-                          busy ? null : () => _openDay(copyJson(todayMeal)),
+                          'medical-risk-check', '开始健康核对',
+                          busy ? null : _openMedicalSafety,
                         ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            if (_profileIssue == null && todayMeal != null)
+              Card(
+                color: Colors.white,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.restaurant_menu_rounded,
+                              color: PlannerVisual.infoInk, size: 30),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('今天吃什么',
+                                  style: Theme.of(context).textTheme.headlineSmall),
+                                Text('$today · ${mealRecordCount(today)}/3餐有记录',
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(color: PlannerVisual.muted)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      ...List<Json>.from(todayMeal['meals']).map(
+                        (m) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: PlannerMealRow(
+                            slot: m['slot'] as String,
+                            title: t(m['slot']),
+                            name: repo.catalog.recipes[m['recipe_id']]!['name'] as String,
+                            status: (records['$today/${m['slot']}']?['status'] ?? 'pending') as String,
+                            onTap: busy ? null : () => _openDay(copyJson(todayMeal)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      plannerButton(
+                        'open-today',
+                        mealRecordCount(today) == 3
+                            ? '查看今天的记录和食谱'
+                            : '查看食谱 · 吃完记一下',
+                        busy ? null : () => _openDay(copyJson(todayMeal)),
+                      ),
+                      Text(
+                        hasRecord(today, 'review') ? '今日回顾已经保存' : '吃完三餐后，可以写一句今天的感受',
+                        style: Theme.of(context).textTheme.bodySmall
+                            ?.copyWith(color: PlannerVisual.muted),
                       ),
                     ],
                   ),
@@ -431,9 +487,26 @@ class _PlannerPageState extends State<PlannerPage> {
                 ),
               ),
             if (_profileIssue == null && todayMeal == null)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Text('先在“我的资料”确认身体资料，再选好饮食偏好，最后生成餐单。生成后每天在这里查看。'),
+              Card(
+                color: PlannerVisual.info,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.lightbulb_outline,
+                          color: PlannerVisual.infoInk, size: 28),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          '还没有今天的餐单。\n完成身体资料和健康核对后，生成一周菜单就能每天照着吃。',
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(color: PlannerVisual.infoInk),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             plannerButton(
               'generate',
