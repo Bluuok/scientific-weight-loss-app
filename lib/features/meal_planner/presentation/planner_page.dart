@@ -508,114 +508,171 @@ class _PlannerPageState extends State<PlannerPage> {
                   ),
                 ),
               ),
-            plannerButton(
-              'generate',
-              current == null ? 'AI 生成7天餐单（从今天起）' : t('nextWeek'),
-              busy || _profileIssue != null
-                  ? null
-                  : () async {
-                      String start;
-                      start = weeks.isEmpty
-                          ? today
-                          : nextDay(weeks.first['plan']['period_start'], 7);
-                      if (start.compareTo(today) < 0) start = today;
-                      await _generate(start);
-                    },
-              primary: current == null,
-            ),
-            if (weeks.isNotEmpty)
-              const Padding(
-                padding: EdgeInsets.only(top: 12),
-                child: Text('本周与其他日期'),
-              ),
-            if (weeks.isNotEmpty)
-              Semantics(
-                identifier: 'planner-week-select',
-                child: DropdownButton<String>(
-                  isExpanded: true,
-                  value: current!['id'],
-                  items: weeks
-                      .map(
-                        (p) => DropdownMenuItem<String>(
-                          value: p['id'],
-                          child: Text(
-                            '${p['plan']['period_start']} — ${nextDay(p['plan']['period_start'], 6)}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: busy ? null : (v) => setState(() => selected = v),
+            if (current == null &&
+                (_profileIssue != null ||
+                 !repo.enforceMedicalScreen ||
+                 repo.medicalSafetyIssue == null))
+              SizedBox(
+                width: double.infinity,
+                child: plannerButton(
+                  'generate',
+                  '第2步：生成一周菜谱',
+                  busy || _profileIssue != null
+                      ? null
+                      : () async {
+                          var start = weeks.isEmpty
+                              ? today
+                              : nextDay(weeks.first['plan']['period_start'], 7);
+                          if (start.compareTo(today) < 0) start = today;
+                          await _generate(start);
+                        },
                 ),
               ),
             if (current != null) ...[
-              Text(
-                '${t('source')}: ${current['notice'] == 'local recipe swap' ? t('manual') : t(current['source'])} · 第${current['version']}版',
-              ),
-              if (current['notice'] != '')
-                Text(
-                  current['notice'] == 'local recipe swap'
-                      ? '已按你的选择换菜，并重新核验营养。'
-                      : current['source'] == 'ai'
-                      ? plannerErrorText(current['notice'])
-                      : t('fallbackNotice'),
-                ),
-              Text(
-                '本周记录：$weekMealsRecorded/21餐 · 回顾$weekReviewsRecorded/7天',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              const Text('只表示有记录，包含明确没吃；不代表营养达标或减重效果。'),
-              plannerSecondaryButton(
-                'grocery-list',
-                '本周采购清单与当地菜价',
-                busy ? null : () => showDialog<void>(
-                  context: context,
-                  builder: (_) => GroceryBudgetDialog(
-                    repo: repo,
-                    plan: current['plan'],
+              const SizedBox(height: 14),
+              Card(
+                color: PlannerVisual.info,
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.fact_check_outlined,
+                          color: PlannerVisual.infoInk, size: 30),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('本周记录情况',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(color: PlannerVisual.infoInk)),
+                            Text('$weekMealsRecorded / 21 餐已记录 · '
+                              '$weekReviewsRecorded / 7 天已回顾',
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: PlannerVisual.infoInk)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              ...days.map(
-                (day) => Card(
-                  child: plannerSurface(
-                    'control-7691',
-                    ListTile(
-                      contentPadding: const EdgeInsets.all(16),
-                      leading: Icon(
-                        day['date'] == today
-                            ? Icons.today
-                            : Icons.calendar_today,
+              Text('包含主动标记“没吃”的记录，不代表饮食或减重达标。',
+                style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 14),
+              Card(
+                color: Colors.white,
+                child: plannerSurface(
+                  'weekly-tools',
+                  ExpansionTile(
+                    leading: const Icon(Icons.calendar_month_outlined,
+                        color: PlannerVisual.infoInk, size: 30),
+                    title: const Text('查看一周安排'),
+                    subtitle: const Text('其他日期、采购清单、下周菜单'),
+                    childrenPadding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
+                    children: [
+                      Text('当前查看哪一周',
+                          style: Theme.of(context).textTheme.titleMedium),
+                      Semantics(
+                        identifier: 'planner-week-select',
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          value: current['id'],
+                          items: weeks.map(
+                            (p) => DropdownMenuItem<String>(
+                              value: p['id'],
+                              child: Text(
+                                "${p['plan']['period_start']} — ${nextDay(p['plan']['period_start'], 6)}",
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ).toList(),
+                          onChanged: busy ? null : (value) =>
+                              setState(() => selected = value),
+                        ),
                       ),
-                      title: Text(
-                        '${day['date']}${day['date'] == today ? ' · ${t('today')}' : ''}',
-                        style: const TextStyle(fontSize: 20),
+                      const SizedBox(height: 8),
+                      for (final day in days)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Material(
+                            color: day['date'] == today
+                                ? PlannerVisual.lunch
+                                : PlannerVisual.background,
+                            borderRadius: BorderRadius.circular(16),
+                            child: plannerSurface(
+                              'control-7691',
+                              ListTile(
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 5),
+                                leading: Icon(
+                                  day['date'] == today
+                                    ? Icons.today_rounded
+                                    : Icons.event_note_rounded,
+                                  color: day['date'] == today
+                                    ? PlannerVisual.lunchInk
+                                    : PlannerVisual.infoInk,
+                                ),
+                                title: Text(
+                                  "${day['date']}${day['date'] == today ? ' · 今天' : ''}",
+                                ),
+                                subtitle: Text(
+                                  "${mealRecordCount(day['date'])}/3餐有记录 · "
+                                  "${hasRecord(day['date'], 'review') ? '已回顾' : '未回顾'}",
+                                ),
+                                trailing: const Icon(Icons.chevron_right),
+                                onTap: busy ? null : () => _openDay(
+                                    Map<String, dynamic>.from(day)),
+                              ),
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 8),
+                      plannerSecondaryButton(
+                        'grocery-list',
+                        '查看7天买菜清单',
+                        busy ? null : () => showDialog<void>(
+                          context: context,
+                          builder: (_) => GroceryBudgetDialog(
+                              repo: repo, plan: current['plan']),
+                        ),
                       ),
-                      subtitle: Text(
-                        '${mealRecordCount(day['date'])}/3餐有记录'
-                        ' · ${hasRecord(day['date'], 'review') ? '已回顾' : '未回顾'}',
+                      plannerSecondaryButton(
+                        'generate',
+                        '安排下一周菜谱',
+                        busy ? null : () async {
+                          var start = nextDay(
+                              weeks.first['plan']['period_start'], 7);
+                          if (start.compareTo(today) < 0) start = today;
+                          await _generate(start);
+                        },
                       ),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: busy
-                          ? null
-                          : () async {
-                              await _openDay(Map<String, dynamic>.from(day));
-                            },
-                    ),
+                      plannerSecondaryButton(
+                        'adjust',
+                        busy ? '正在调整菜单…' : '调整本周还没吃的菜',
+                        busy ? null : () => _generate(
+                          current['plan']['period_start'],
+                          previous: current,
+                        ),
+                      ),
+                      Text(
+                        '菜谱来源：${current['notice'] == 'local recipe swap' ? '手动换菜' : t(current['source'])} · '
+                        '第${current['version']}版',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      if (current['notice'] != '')
+                        Text(
+                          current['notice'] == 'local recipe swap'
+                            ? '已按选择换菜并重新核算营养。'
+                            : current['source'] == 'ai'
+                              ? plannerErrorText(current['notice'])
+                              : t('fallbackNotice'),
+                        ),
+                    ],
                   ),
                 ),
-              ),
-              plannerButton(
-                'adjust',
-                busy ? 'AI 正在调整，请稍候…' : '调整剩余餐单',
-                busy
-                    ? null
-                    : () => _generate(
-                        current['plan']['period_start'],
-                        previous: current,
-                      ),
-                primary: false,
               ),
             ],
             if (current != null)
