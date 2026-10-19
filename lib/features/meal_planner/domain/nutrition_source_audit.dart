@@ -30,7 +30,8 @@ class NutritionSourceAudit {
       final uri = Uri.tryParse(food['source_url']?.toString() ?? '');
       if (uri == null || uri.scheme != 'https' ||
           uri.host != 'fdc.nal.usda.gov' ||
-          !uri.path.contains('/food-details/')) {
+          uri.path != '/food-details/${food['fdc_id']}/nutrients' ||
+          uri.hasQuery || uri.hasFragment || uri.userInfo.isNotEmpty) {
         throw PlanRejected('Unverified nutrition source: $id');
       }
       for (final key in coreNutrients) {

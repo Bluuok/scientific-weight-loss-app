@@ -35,6 +35,8 @@ void main() {
   test('invalid provenance, duplicate IDs and broken ingredients fail', () {
     for (final mutation in <void Function(FoodCatalog)>[
       (c) => c.foods['egg']!['source_url'] = 'https://example.org/x',
+      (c) => c.foods['egg']!['source_url'] =
+          c.foods['milk']!['source_url'],
       (c) => c.foods['egg']!['fdc_id'] = c.foods['milk']!['fdc_id'],
       (c) => c.foods['egg']!['protein'] = null,
       (c) => (c.recipes['b0']!['ingredients'] as Map)['fake'] = 80,
