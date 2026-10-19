@@ -11,6 +11,7 @@ import '../domain/planner.dart';
 import '../domain/recipe_steps.dart';
 import '../domain/weight_loss_eligibility.dart';
 import 'planner_text.dart';
+import 'medical_safety_page.dart';
 
 Widget plannerSurface(String id, Widget child) =>
     Semantics(identifier: 'planner-$id', child: child);
@@ -119,8 +120,22 @@ class _PlannerPageState extends State<PlannerPage> {
         ),
       ) ??
       false;
+  Future<void> _openMedicalSafety() async {
+    await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MedicalSafetyPage(repo: repo),
+      ),
+    );
+    if (mounted) setState(() {});
+  }
+
   Future<void> _generate(String start, {Json? previous}) async {
     try {
+      if (repo.enforceMedicalScreen && repo.medicalSafetyIssue != null) {
+        await _openMedicalSafety();
+        if (!mounted || repo.medicalSafetyIssue != null) return;
+      }
       final rules = await repo.rules();
       if (repo.state['safety_ack_version'] != 'older-obesity-v3') {
         if (!await _confirm(t('safetyTitle'), t('safety'))) return;
@@ -326,6 +341,23 @@ class _PlannerPageState extends State<PlannerPage> {
                 () => Navigator.pushNamed(
                   context,
                   NavigationOptions.manageProfilesRoute,
+                ),
+              ),
+            if (_profileIssue == null && repo.enforceMedicalScreen)
+              plannerSecondaryButton(
+                'medical-risk-check',
+                repo.medicalSafetyIssue == null
+                    ? '查看或更新健康风险核对'
+                    : '开始前必填：健康风险核对',
+                busy ? null : _openMedicalSafety,
+              ),
+            if (_profileIssue == null &&
+                repo.enforceMedicalScreen &&
+                repo.medicalSafetyIssue != null)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(repo.medicalSafetyIssue!),
                 ),
               ),
             if (_profileIssue == null && todayMeal != null)
