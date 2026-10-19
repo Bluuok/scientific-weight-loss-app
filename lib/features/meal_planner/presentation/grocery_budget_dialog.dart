@@ -113,7 +113,7 @@ class _GroceryBudgetDialogState extends State<GroceryBudgetDialog> {
                     identifier: 'planner-grocery-price-${item['food_id']}',
                     child: ListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: Text('${item['name']} · ${grams}克'),
+                      title: Text('${item['name']} · $grams克'),
                       subtitle: Text(
                         price == null
                             ? '价格未填 · ${item['state']}'
