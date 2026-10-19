@@ -150,6 +150,7 @@ class PlannerRepository {
       minimumProtein: rule.minimumProtein,
       longTermGoalKg: user.targetWeightKg,
       weightMeasurements: measurements,
+      observationAsOf: localDay(now()),
     );
   }
 

@@ -2,7 +2,7 @@ import 'planner.dart';
 
 /// A 30-day habit framework, not a promise to lose a specified mass in a month.
 class MonthlyDirection {
-  static const version = 'monthly-reference-v2';
+  static const version = 'monthly-reference-v3';
   static const focuses = <String>[
     '建立规律：三餐按时、熟悉克数与油盐，真实记录，不追求快速下降',
     '形成轮换：鱼禽蛋豆与少量瘦牛肉轮换，保持每天蔬果、奶类和主食',
@@ -80,10 +80,18 @@ class MonthlyDirection {
     required double minimumProtein,
     double? longTermGoalKg,
     List<Json> weightMeasurements = const [],
+    // Explicit snapshot date: a plan start may lie in the past or future.
+    // Keep the old default for callers that do not supply a snapshot.
+    String? observationAsOf,
   }) {
     final elapsed = _days(monthStart, weekStart).clamp(0, 1000000).toInt();
     final cycleIndex = elapsed ~/ 30;
     final cycleStart = nextDay(monthStart, cycleIndex * 30);
+    final cycleEnd = nextDay(cycleStart, 29);
+    final snapshotDate = observationAsOf ?? weekStart;
+    final observationEnd = snapshotDate.compareTo(cycleEnd) > 0
+        ? cycleEnd
+        : snapshotDate;
     final day = elapsed % 30 + 1;
     final phase = phaseForDay(day);
     return {
@@ -92,7 +100,7 @@ class MonthlyDirection {
       'first_month_end': nextDay(monthStart, 29),
       'cycle_number': cycleIndex + 1,
       'cycle_start': cycleStart,
-      'cycle_end': nextDay(cycleStart, 29),
+      'cycle_end': cycleEnd,
       'overall_program_day': elapsed + 1,
       'horizon_days': 30,
       'weekly_window_days': 7,
@@ -116,7 +124,7 @@ class MonthlyDirection {
       'weight_observation': _weightEvidence(
         weightMeasurements,
         cycleStart,
-        weekStart,
+        observationEnd,
       ),
       'phase_outline': [
         for (var i = 0; i < 4; i++) {'phase': i + 1, 'focus': focuses[i]},

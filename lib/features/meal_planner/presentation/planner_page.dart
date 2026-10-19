@@ -1100,7 +1100,19 @@ class _PlannerSettingsState extends State<PlannerSettings> {
     super.dispose();
   }
 
+  void _showSaveFeedback(String value, {bool failed = false}) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.removeCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(value),
+        duration: Duration(seconds: failed ? 8 : 4),
+      ),
+    );
+  }
+
   Future<void> save({bool probe = false, bool connection = false}) async {
+    if (busy) return;
     setState(() => busy = true);
     try {
       if (connection || probe) {
@@ -1120,10 +1132,12 @@ class _PlannerSettingsState extends State<PlannerSettings> {
           configured = configured || key.text.isNotEmpty;
           key.clear();
         });
+        _showSaveFeedback(message!);
       }
     } catch (e) {
       if (mounted) {
         setState(() => message = '${t('failed')}: ${plannerErrorText(e)}');
+        _showSaveFeedback(message!, failed: true);
       }
     }
     if (mounted) setState(() => busy = false);
