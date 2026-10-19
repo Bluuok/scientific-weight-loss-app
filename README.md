@@ -1,300 +1,155 @@
-> **个人安卓二开项目：科学饮食**
-> 仅支持安卓手机，主要面向适合减重的高血压肥胖老年男性。以中文 AI 餐单、逐餐克数与做法、真实饮食记录为核心。
-> 本仓库不是原项目的官方发行版；下方保留原项目介绍与来源。[本项目范围与验证方式](docs/android-project-scope.md)。
-
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/icon/ont_banner_top_light.png">
-    <img alt="OpenNutriTracker" src="assets/icon/ont_banner_top.png" width="420" />
-  </picture>
+  <img src="docs/readme/hero.svg" alt="科学饮食：把饮食建议，变成每天做得出的三餐" width="100%" />
 </p>
 
 <p align="center">
-  <b>Free. Open. Cited.</b><br />
-  Open-source calorie, macro, and micronutrient logging for Android and iOS.
+  <strong>中文 · 安卓手机 · AI 餐单 · 本地记录</strong><br />
+  面向高血压合并肥胖老年人的饮食规划与记录工具，当前优先优化男性使用场景。
 </p>
 
 <p align="center">
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-GPLv3-22de5f?style=flat-square" /></a>
-  <a href="https://github.com/simonoppowa/OpenNutriTracker/releases"><img alt="Release" src="https://img.shields.io/github/v/release/simonoppowa/OpenNutriTracker?style=flat-square&color=22de5f" /></a>
-  <a href="https://github.com/simonoppowa/OpenNutriTracker/actions/workflows/default_workflow.yml"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/simonoppowa/OpenNutriTracker/default_workflow.yml?branch=main&style=flat-square" /></a>
-  <img alt="Platform" src="https://img.shields.io/badge/platform-Android%20%7C%20iOS-lightgrey?style=flat-square" />
-  <a href="https://hosted.weblate.org/engage/opennutritracker/"><img alt="Translation status" src="https://img.shields.io/weblate/progress/opennutritracker?server=https%3A%2F%2Fhosted.weblate.org&style=flat-square&color=22de5f&label=translated" /></a>
-  <a href="https://github.com/simonoppowa/OpenNutriTracker/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/simonoppowa/OpenNutriTracker?style=flat-square" /></a>
-  <a href="https://github.com/simonoppowa/OpenNutriTracker/issues"><img alt="Issues" src="https://img.shields.io/github/issues/simonoppowa/OpenNutriTracker?style=flat-square" /></a>
-  <a href="https://github.com/simonoppowa/OpenNutriTracker/pulls"><img alt="Pull requests" src="https://img.shields.io/github/issues-pr/simonoppowa/OpenNutriTracker?style=flat-square" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-28644B?style=flat-square" alt="GPL-3.0" /></a>
+  <img src="https://img.shields.io/badge/Platform-Android-28644B?style=flat-square" alt="Android only" />
+  <img src="https://img.shields.io/badge/Flutter-3.44.6-397D9C?style=flat-square" alt="Flutter 3.44.6" />
+  <a href="https://github.com/Bluuok/scientific-weight-loss-app/actions/workflows/default_workflow.yml"><img src="https://github.com/Bluuok/scientific-weight-loss-app/actions/workflows/default_workflow.yml/badge.svg?branch=main" alt="Android checks" /></a>
 </p>
 
 <p align="center">
-  <a href="https://trendshift.io/repositories/12625"><img alt="simonoppowa/OpenNutriTracker | Trendshift" src="https://trendshift.io/api/badge/repositories/12625" width="250" height="55" /></a>
-  &nbsp;
-  <a href="https://trendshift.io/repositories/12625"><img alt="#2 Dart Repository Of The Day | Trendshift" src="https://trendshift.io/api/badge/trendshift/repositories/12625/daily?language=Dart" width="250" height="55" /></a>
+  <a href="#从计划到一顿饭">使用流程</a> ·
+  <a href="#界面预览">界面预览</a> ·
+  <a href="#ai-如何参与">AI 工作方式</a> ·
+  <a href="#运行与构建">运行与构建</a> ·
+  <a href="#隐私与密钥">隐私与密钥</a>
 </p>
 
-<p align="center">
-  <a href="GettingStarted.md">Getting started</a>
-  ·
-  <a href="CONTRIBUTING.md">Contributing</a>
-  ·
-  <a href="https://hosted.weblate.org/engage/opennutritracker/">Translate</a>
-</p>
+## 让一份计划真正走进厨房
 
-OpenNutriTracker logs what you eat and drink against a calorie and macro target it works
-out from your height, weight, age, and activity level, and keeps the record on your phone.
-It is for anyone who wants the numbers without handing their eating history to a company,
-whether that is losing weight, gaining it, managing a condition, or simply knowing.
+“今天吃什么、每种放多少、油盐怎么称、做完如何记录”，是这个项目优先解决的问题。
 
-## Install
+**科学饮食**基于 [OpenNutriTracker](https://github.com/simonoppowa/OpenNutriTracker) 二次开发，将 AI 周餐单、30 天参考方向、食材克数、家常做法、饮食记录与采购清单连接起来。家人可以协助建立资料和配置服务，日常操作围绕 **看今天的餐单 → 按量准备 → 吃完记录 → 回顾调整** 展开。
 
-<p align="center">
-  <a href="https://apps.apple.com/us/app/opennutritracker/id6451490901"><img alt="Download on the App Store" src="fastlane/metadata/android/en-US/images/appstore_banner.png" height="54" /></a>
-  &nbsp;&nbsp;
-  <a href="https://play.google.com/store/apps/details?id=com.opennutritracker.ont.opennutritracker"><img alt="Get it on Google Play" src="fastlane/metadata/android/en-US/images/playstore_banner.png" height="54" /></a>
-</p>
+项目只维护 **Android 手机端**。界面以中文、大字体和明确的主操作为重点；仓库保留的 iOS 等工程来自上游，不属于本分支支持的产品范围。
 
-## Screenshots
+## 从计划到一顿饭
+
+| 步骤 | 使用者看到什么 | 程序做什么 |
+| :-- | :-- | :-- |
+| **01 · 建立资料** | 为自己或家人分别设置身体资料、目标和饮食偏好 | 隔离不同家庭成员的计划与记录 |
+| **02 · 核对健康风险** | 简短中文问卷，确认需要专业评估的情况 | 风险或不确定项会阻止普通减重餐单生成 |
+| **03 · 生成一周餐单** | 在月度参考方向下查看未来七天的安排 | 结合已知资料、偏好、历史记录和可用食谱生成并复核 |
+| **04 · 照着准备三餐** | 每种食材的克数、称量状态、每餐油盐和具体做法 | 食材、份量与做法同步换算 |
+| **05 · 如实记录与回顾** | 完成、换餐、明确没吃，点错可以撤销 | 同步饮食日记，保留已执行餐次，统计记录覆盖情况 |
+| **06 · 准备下一次采购** | 一周原料汇总和当地价格输入 | 按人民币 / 500 克计算；缺价时不显示完整预算 |
+
+## 界面预览
 
 <table align="center">
   <tr>
-    <td align="center" width="33%"><img alt="Home screen showing calories left on a progress ring, carbs, fat and protein against their targets, and the day's logged activity" src="docs/screenshots/1_en-US.png" /></td>
-    <td align="center" width="33%"><img alt="Adding food to lunch, with recently logged items ready to re-add in one tap and a barcode scanner in the search field" src="docs/screenshots/2_en-US.png" /></td>
-    <td align="center" width="33%"><img alt="Food detail showing the full nutrition table with saturated fat, sugar and fibre, plus an expanded micronutrient panel" src="docs/screenshots/3_en-US.png" /></td>
+    <td align="center" width="50%"><img src="docs/readme/plan-overview.png" alt="模拟资料下的今日餐单、分餐记录状态与进入餐单按钮" width="310" /></td>
+    <td align="center" width="50%"><img src="docs/readme/meal-detail.png" alt="模拟资料下的餐次、用油食盐、食材做法展开入口与完成按钮" width="310" /></td>
   </tr>
   <tr>
-    <td align="center"><sub><b>Home</b><br />where the day stands</sub></td>
-    <td align="center"><sub><b>Add food</b><br />re-log in one tap</sub></td>
-    <td align="center"><sub><b>Food detail</b><br />down to the micronutrient</sub></td>
-  </tr>
-  <tr>
-    <td align="center"><img alt="Diary showing a month calendar with each day marked by how it went, and the selected day's calories and macro rings below" src="docs/screenshots/4_en-US.png" /></td>
-    <td align="center"><img alt="Trends showing a seven-day streak, calories charted against the goal line, and daily macro averages" src="docs/screenshots/5_en-US.png" /></td>
-    <td align="center"><img alt="Profile screen showing BMI, activity level, weight goal and weekly rate" src="docs/screenshots/6_en-US.png" /></td>
-  </tr>
-  <tr>
-    <td align="center"><sub><b>Diary</b><br />every day you've logged</sub></td>
-    <td align="center"><sub><b>Trends</b><br />calories against your goal</sub></td>
-    <td align="center"><sub><b>You</b><br />goals and body metrics</sub></td>
+    <td align="center"><strong>每天先看今天吃什么</strong><br /><sub>餐单、状态和主操作放在一起</sub></td>
+    <td align="center"><strong>每顿饭都可以落实到克数</strong><br /><sub>油盐重点展示，食材与做法按需展开</sub></td>
   </tr>
 </table>
 
-<sub>Screenshots show a demo profile with generated data.</sub>
+<sub>以上为 Flutter 界面测试生成的开发预览，使用模拟资料，包含 [PR #8](https://github.com/Bluuok/scientific-weight-loss-app/pull/8) 的界面改动；不含真实家庭成员资料。主题、字号和机型会影响实际显示。</sub>
 
-## Why OpenNutriTracker
+## 核心能力
 
-|  | |
-| :-- | :-- |
-| **Cited** | Calorie targets follow IOM 2005, BMI follows WHO, macros follow WHO TRS 916, activity burn follows the 2024 Compendium. The in-app Sources & References screen links every paper ([`sources_screen.dart`](lib/core/presentation/sources_screen.dart)). |
-| **Careful** | The fasting timer opens with a content warning linking BEAT and NEDA, and "Not for me" is a first-class answer ([`fasting_warning_dialog.dart`](lib/features/fasting/presentation/widgets/fasting_warning_dialog.dart)). No streak guilt, and no notification you didn't ask for. The daily reminder is off until you enable it. |
-| **Free** | No paid tier and no ads, with zero advertising or analytics SDKs in [`pubspec.yaml`](pubspec.yaml) to add them with. That includes the micronutrient panel the big-name trackers put behind a subscription. No investors, and GPLv3 leaves no exit that could paywall it later. |
-| **Private** | No account to create. Your diary lives in AES-256-encrypted storage with the key held in the Android Keystore / iOS Keychain, every destination that receives a request is listed under [Privacy](#privacy) with what it's sent, and the release signing fingerprint is published so you can verify your download. |
-| **Portable** | Export your diary, activities, tracked days, recipes, weight history and custom activity templates as JSON — or diary, activities and tracked days as CSV — re-import it, or share an entry by QR. The [export format](docs/export-format.md) documents the schema and what it leaves out. |
-| **Open** | Open Food Facts, USDA FoodData Central (CC0) and the German BLS (CC BY 4.0). The backend is its own open repository you can [self-host](docs/supabase-self-hosting.md). |
-| **Community driven** | Over 30 developers have already contributed code, and most merged pull requests come from someone other than the maintainer. Features and fixes arrive as user issues and PRs, across the app and its food backend, and every translation is contributed on [Weblate](https://hosted.weblate.org/engage/opennutritracker/), which needs no Dart and no local setup. |
-| **Inclusive** | Non-binary calorie estimation grounded in published trans-health research, eleven languages, kcal or kJ, and screen-reader support treated as a bug when it breaks. |
+- **跨周衔接的餐单**：以 30 天参考方向组织每周计划，利用已知饮食记录改善轮换，不把未记录推断为没吃。
+- **可以照做的家常餐**：当前内置 **26 种有来源的食材、28 道组合食谱**，呈现生重 / 干重、每餐油盐及制作步骤。
+- **真实记录优先**：调整剩余餐单时保留过去日期和已记录餐次；完成与撤销同步到日记。
+- **健康风险筛查**：覆盖血压控制、肾病、血钾相关风险、吞咽、衰弱、非自愿消瘦与特殊饮食；生成前后均检查状态。
+- **四阶段记录复盘**：分开统计按计划、替换、明确没吃和未知记录，记录覆盖率不等于减重成功率。
+- **家庭采购预算**：根据计划份量汇总原料，使用家人手工录入的当地菜价；不让 AI 猜测实时价格。
+- **家庭资料隔离**：沿用上游本地加密 Hive 存储，每位家庭成员分别保存计划、价格和记录。
 
-## Key features
+## AI 如何参与
 
-|  | Feature | |
-| :--: | :-- | :-- |
-| 🍎 | **Food logging** | Search, scan a barcode, or quick-add kcal, backed by Open Food Facts, USDA, and German BLS. |
-| 📓 | **Food diary** | Breakfast, Lunch, Dinner, and Snack on a calendar, with per-meal kcal targets. |
-| 📈 | **Trends** | Streaks, calories against your goal line, macro averages, water, and weight over time. |
-| 🥕 | **Micronutrients** | Day and week views for ten nutrients, with optional reference-intake bars. |
-| 🍽️ | **Meals and recipes** | Reusable recipes with photo, brand, and barcode. |
-| 🏃 | **Activities and weight** | Workout catalogue or custom activities; weight trend against a target. |
-| 💧 | **Water and fasting** | A home-screen water chip and an optional intermittent-fasting timer. |
-| 🎨 | **Themes and units** | Material You accent on Android 12+, sixteen built-in themes, kcal or kJ. |
-| 📤 | **Export and import** | JSON and CSV export, JSON import, and QR sharing. |
+AI 接收内置系统提示词与精简上下文，从允许的食谱中安排餐次；营养计算、份量边界和历史保护由本地代码复核。
 
-<details>
-<summary>More detail on each feature</summary>
+```mermaid
+flowchart LR
+    A[身体资料与健康核对] --> B[偏好与月度参考方向]
+    B --> C[AI 安排七天餐单]
+    C --> D[本地规则复核]
+    D --> E[食材克数与做法]
+    E --> F[实际记录与复盘]
+    F --> B
+```
 
-- **🍎 Nutritional tracking:** Log meals and snacks against a large food database: Open Food Facts plus a multi-source reference backend covering USDA FoodData Central and the German Bundeslebensmittelschlüssel (BLS), with the sources selectable in Settings → Food databases. Each entry can be searched, scanned, or added straight as a number when you already know the calorie cost.
-- **📓 Food diary:** A calendar-driven diary that breaks the day into Breakfast, Lunch, Dinner, and Snack, with per-meal kcal targets (Standard, OMAD, Five-small, Mediterranean, Two-meal, or a custom share), drag-to-rearrange between meals, and sort by time or by macro contribution.
-- **📈 Trends:** A current and best day-streak card, calories charted against your goal line, daily macro averages, water intake, and weight against target with an estimate of the weeks left to reach it. Switch the window between 7, 30 and 90 days or your whole history.
-- **🥕 Micronutrient panel:** Day and week views for fibre, sodium, saturated fat, sugar, calcium, iron, potassium, vitamin D, vitamin B12, and magnesium, with optional Dietary Reference Intake bars from the IOM tables so you can see where you sit against the reference range.
-- **🍽️ Custom meals + recipes:** Build a one-off custom meal or save a reusable recipe with photo, brand, and barcode. The recipe builder has its own ingredient picker with barcode scanning so you can compose meals from real products without leaving the screen.
-- **⚡ Quick add:** When you already know roughly how much you ate, skip the search flow entirely. Quick add takes a title plus kcal (and optional macros) and logs it straight to the meal section.
-- **📷 Barcode scanner:** Scan packaged items for instant lookup, paste a barcode manually when the camera struggles, or attach a barcode to a custom meal so future scans recognise your own foods.
-- **🏃 Activities:** Log workouts from a categorised activity catalogue or define your own custom activities with direct kcal entry and reusable templates.
-- **💧 Water tracker:** A water chip on the home screen with quick-add increments, an editable goal, and undo for the last entry.
-- **⏱️ Fasting timer:** Optional intermittent-fasting timer with content-warning gate, a home chip showing time remaining, and a completion notification when you reach your window.
-- **⚖️ Weight history:** Capture weight during onboarding and on demand, see the trend on a chart with a dashed line at your target weight, and optionally taper the calorie goal as you approach it.
-- **🎨 Material You + theme picker:** Adopt the system accent colour on Android 12+, or pick from sixteen built-in presets. The app icon adapts to iOS dark and tinted appearances and to Android themed icons.
-- **🔢 kcal or kJ:** Switch the energy unit globally; every diary entry, target, and chart reflects the choice.
-- **📤 Export and import:** Export your diary entries, activities, tracked days, recipes, weight history and custom activity templates to a JSON zip (recipe and custom-meal photos included), or diary, activities and tracked days as a CSV zip — you pick one format, the bundle carries only that one ([bundle format](docs/export-format.md)). Paste a JSON blob to import meals, and share a single meal or activity as a QR code another phone can scan. Your profile, custom-meal catalogue, water and fasting history stay out of the bundle.
-
-</details>
-
-## Privacy
-
-No account, no sign-in, no analytics, no ads. Your profile, diary, activities, weight, water and fasting history, custom meals, and recipes live in local [Hive](https://pub.dev/packages/hive_ce) boxes encrypted with AES-256. The key is generated on first launch, kept in the Android Keystore / iOS Keychain, and never transmitted ([source](lib/core/utils/secure_app_storage_provider.dart)). **Settings → Delete all my data** wipes the active profile. Formal policy: [Data Protection](https://www.iubenda.com/privacy-policy/53501884).
-
-**What leaves your device.** These destinations, nothing else, and the last four only if you turn them on — plus one more, set out below, if you point the app at a server of your own:
-
-| Destination | When | What is sent |
+| 层次 | 职责 | 代码入口 |
 | :-- | :-- | :-- |
-| [Open Food Facts](https://world.openfoodfacts.org/) | Food search, barcode scan, or whenever a food's photograph is shown — in search results, on a meal screen, and on the diary card of a meal you have already logged | The search term or barcode. A word search also sends your device's **language** code to rank results; the fallback search and the barcode lookup send no locale at all. Your **country is never sent** — the country boost is applied on your device, to the results that come back. A photograph's address contains that product's barcode. Searches and product lookups identify the app by name, platform and version; photograph downloads do not |
-| Supabase reference backend | Food search | The text you typed; your **device's** language code, when it is one the backend has food names in; and which food databases you have left switched on — that list travels on every search, because onboarding starts one of the five off |
-| [Anthropic](https://www.anthropic.com/) | **Only if you save your own API key and pick Anthropic** | The meal line you type on the multi-item add screen, or a meal photo you choose to read there, and your app language |
-| [OpenAI](https://openai.com/) | **Only if you save your own API key and pick OpenAI** | As the Anthropic row, plus the model you chose |
-| [OpenRouter](https://openrouter.ai/) | **Only if you save your own API key and pick OpenRouter** | As the Anthropic row, plus the model you chose |
-| └ the vendor serving it | | Named in Settings; pinned, so it is the vendor the model names |
-| [Sentry](https://sentry.io) | **Only if you opt in** | Crash traces, app and OS version, device model |
+| 提示词与上下文 | 约束角色、轮换、证据使用和输出格式 | [planning_prompt.dart](lib/features/meal_planner/domain/planning_prompt.dart) |
+| 服务调用 | DeepSeek 默认入口、兼容接口、授权确认与请求处理 | [meal_planning_service.dart](lib/features/meal_planner/data/meal_planning_service.dart) |
+| 本地规则 | 独立核算餐单、检查允许食谱与份量 | [planner.dart](lib/features/meal_planner/domain/planner.dart) |
+| 记录协调 | 资料隔离、生成一致性、已执行餐次保护和日记同步 | [planner_repository.dart](lib/features/meal_planner/data/planner_repository.dart) |
+| 可执行做法 | 从食谱原料和份量生成克数与步骤 | [recipe_steps.dart](lib/features/meal_planner/domain/recipe_steps.dart) |
 
-**And one destination this project cannot name.** Every row above is a company with a published policy you can hold it to. If you point the app at a server you run, the destination is a machine of your choosing — so this row states a **rule** rather than a party. It is set apart deliberately: an open-ended entry in the list above would weaken the closed-list promise the list exists to make. It earns a place anyway, because burying the most privacy-relevant destination in prose would read as evasive.
+未配置服务时可使用明确标识的备用餐单；存在可行性或校验问题时不会悄悄放宽规则。备用模板与 AI 生成在界面上区分显示。
 
-| Destination | When | What is sent |
-| :-- | :-- | :-- |
-| **The address you entered, and nothing else** | **From the moment you type a server address in Settings, not from when you save it** — when you change the address and leave the field, when you press *Load models*, when you save (the setup check), and each time a meal line or photo is read | A models-list request when you change the address or press *Load models*; a fixed example line and a bundled photograph on save; otherwise the meal line or the photo, your app language, and the model name you typed |
+## 健康与数据边界
 
-This is the one row you can falsify yourself: your own server's access log settles it, where no user can ever settle a claim about a vendor's retention. **No third party receives anything on this path** — which is not the same as the data staying put. It does leave the device, to the address you named, and the app will not send it in the clear to anything that is not a private address.
+本项目提供饮食参考和记录功能，**不提供疾病诊断、用药调整或个体化医学处方，也没有经过临床疗效验证**。健康核对全部选择“没有”，不代表血压或肾功能已经检查正常。
 
-**AI meal assistance is marked Experimental**, and that is a claim about stability rather than accuracy: the feature may change or be removed, and the providers and models offered may change with it. It stops being experimental when two things hold — a model has been screened against a real corpus of photographs containing no food ([#719](https://github.com/simonoppowa/OpenNutriTracker/issues/719) ran on five images, only one of them a photograph), and one release cycle passes with no provider or model dropped from the curated list. Until both are true the label stays, so that removing it is something you can check rather than something that felt right.
+- 当前食材来自 USDA FoodData Central，来源编号、链接和营养字段经过本地完整性检查。
+- 钾、钙、镁、磷、饱和脂肪等未采集指标保持未知，不按零处理，也不宣称完整营养达标。
+- 30 天是计划组织与习惯复盘框架，不承诺固定减重公斤数或血压变化。
+- 中国本地食物成分数据需确认授权与原料匹配后接入；不把国外某一种原料直接等同于所有国内商品。
 
-**Neither test can be run against a server you run yourself**, so the exit condition above is about the three hosted providers and does not cover that path. The project has never seen the model on your machine and there is no curated list for it to be dropped from. What stands in for a screen there is the setup check in Settings: it asks your server to read one meal line and one sample photograph, and reports what came back — so the camera is offered only after a photograph has actually been read once, and stops being offered when your server says it cannot.
+相关依据、实现与限制见 [食物数据来源](docs/nutrition-data-provenance-2026.md)、[健康风险筛查](docs/medical-risk-screen-2026.md)、[家常餐证据](docs/meal-planner-evidence-and-budget.md)、[月度记录复盘](docs/monthly-feedback-evidence-2026.md) 和 [采购预算](docs/grocery-budget-2026.md)。
 
-**AI meal assistance** is off until you supply your own API key, or the address of a server you run, in **Settings → AI meal assistance** — a server of your own needs an address and a model name, not a key. It can be paused without removing the credential. Where there is a key, it is held in the Android Keystore / iOS Keychain and never leaves the device except as the request header it authenticates; a server of your own has an address there instead, held the same way. The project never sees either and does not pay for a provider's use. Only the line you type, or a photo you explicitly pick, is sent — never your diary, profile, or history.
+## 隐私与密钥
 
-**Three providers, and they differ along two axes that do not line up.** Anthropic and OpenAI are reached directly; OpenRouter is a **broker**, so a request touches OpenRouter *and* the vendor serving your chosen model — two destinations, not one. Every curated OpenRouter model is pinned to the vendor named beside it in Settings, with fallbacks off, so that vendor is the one that answered; without a pin a request for a Claude model is routinely served by someone else, which is why the pin exists. The OpenRouter list reaches two vendors — Anthropic and OpenAI — so on that path the vendor is a per-model choice rather than a property of the provider. A key is stored per provider, so switching back does not mean finding a credential again.
-
-Retention cuts the other way. Anthropic states images are not stored beyond the request — with one exception, below. OpenRouter keeps content only to route it, *except as required for abuse detection, security, billing or legal compliance*. And **OpenAI keeps API inputs and outputs for up to 30 days** by default, longer where law requires it or where reasonably necessary to protect its services or a third party from harm. **Being reached directly is not the same as keeping less.**
-
-**On the broker path the two stack**, because a request lands at both destinations: OpenRouter's promise covers OpenRouter's own handling, and the vendor serving your model then keeps what it receives under its own policy. So choosing an OpenAI model through OpenRouter gets OpenRouter's routing promise *and* OpenAI's 30 days — and choosing an Anthropic one gets the ephemerality below, exception included. The serving vendor is named in Settings on every row precisely because it decides this.
-
-**One thing is still unique to the OpenRouter path.** An account-level identity is forwarded to the serving vendor on every request and cannot be switched off — because you hold one key, it works as a stable per-user handle at that vendor. Neither direct path forwards one: OpenAI's `safety_identifier` is documented optional and the app does not send it.
-
-**Reading a meal photo** is the same feature with a camera instead of a keyboard, and is offered once a key or address is enabled — for a server you run, only after the setup check above has read a photograph successfully. The photo is encoded in memory, sent for that one request, and then unreachable — it is never written to the app's documents directory, so it is not in your exports and cannot be shown again. The system photo picker does hand the app a temporary copy in its cache; the app attempts to delete that as soon as the photo is encoded, whether or not the request succeeded — best effort, so on the rare occasion the delete fails the copy stays in the cache until the OS clears it. **On the Anthropic-direct path**, Anthropic's [vision documentation](https://platform.claude.com/docs/en/build-with-claude/vision) states images are *"ephemeral and not stored beyond the duration of the API request"* and are not used to train models. **That default has one exception, stated by Anthropic itself, and it is about retention, not training:** its [retention documentation](https://platform.claude.com/docs/en/manage-claude/api-and-data-retention) states that content flagged by its automated trust-and-safety systems may be retained for up to two years regardless of the ephemeral promise, to enforce its Usage Policy. That sentence — ephemeral, with this exception — is Anthropic's and does not travel: via OpenRouter or OpenAI the applicable promise is the weaker one above, and the two are weaker in different ways.
-
-The model reads *language*, not nutrition: it returns a food name and, when you stated one, an amount. **Every calorie and macro still comes from the food databases below**, so "every number is cited" holds whether or not you enable this. The request carries a tool schema with no nutrition fields ([#633](https://github.com/simonoppowa/OpenNutriTracker/issues/633)), so the model has nowhere to put an estimated calorie count, and whatever it returns is held to the same bounds the offline parser enforces.
-
-From a photo the rule is tighter still: it may **count** what it can see (two eggs, three sausages) but never **measure**. Nothing in a photograph states a weight, so a gram figure read off a picture would be a guess arriving with the same confidence as a number you typed. Any amount that comes back carrying a unit is discarded along with its number, and the row falls to the ordinary default for you to set.
-
-**How it is built** is documented separately. [The AI implementation](docs/ai-architecture.md) walks a typed meal and a photo end to end, maps the request paths, and shows where each rule above is enforced — the nutrition rule, for one, is a single schema constant with no such field in it, re-checked in Dart against a reply that ignored the schema entirely. This section states what the app promises; that page states how it is made to hold, and defers back here wherever the two touch.
-
-[USDA FoodData Central](https://fdc.nal.usda.gov/), the German [BLS](https://www.blsdb.de), INDB and TBCA are where the food *data* comes from, not places your device talks to. Those datasets are ingested into the Supabase backend ahead of time ([self-hosting guide](docs/supabase-self-hosting.md)), so a search reaches that backend and stops there. Settings → Food databases chooses which datasets a search covers. Five are selectable today, with INDB and TBCA in the schema but not yet carrying data ([`sp_const.dart`](lib/features/add_meal/data/dto/sp/sp_const.dart)).
-
-Searches and product lookups to Open Food Facts carry a User-Agent naming the app, platform, and version; photograph downloads do not. Requests to the Supabase backend carry the Supabase SDK's own client headers instead. **The app generates no user or device identifier and sends none** — but a request still arrives from somewhere, and the Supabase gateway logs the address it came from along with a coarse location and a fingerprint of the TLS connection, kept for 24 hours. Search results are cached locally and pruned after 90 days.
-
-**Crash reporting** is off until you enable it, and initializes only in release builds ([`main.dart:119`](lib/main.dart:119)). `sendDefaultPii` stays `false`, so no username, email, or IP-derived identity is attached. Disabling it, or deleting your data, closes the SDK immediately.
-
-**Permissions:** camera (barcode scanning, meal photos), photo library (meal photos, exports), notifications (daily reminder, fasting timer), internet (food lookups), and receive-boot-completed (re-registering the reminder after a reboot). Health data — workouts, and on iOS the body fat percentage — is read only if you turn on workout import under Settings → Health sync, which is off by default; the access is read-only, nothing is ever written back to Health Connect or Apple Health, and the imported workouts stay on your device. No location, contacts, or microphone access.
-
-**Not collected:** no account, email, or phone number. The backend is read with an anonymous key and there is no sign-in path. No advertising ID and no cross-app tracking: `NSPrivacyTracking` is `false` with an empty tracking-domains list, and crash and performance data are declared *not linked to the user* ([`PrivacyInfo.xcprivacy`](ios/Runner/PrivacyInfo.xcprivacy)).
-
-<details>
-<summary><b>Verifying APK signatures</b></summary>
-
-If you are side-loading an OpenNutriTracker APK from GitHub Releases, or from F-Droid once the app is published there, you may want to confirm that the file you downloaded was signed by the same key used for every official release, rather than by someone who intercepted the download or repackaged the app.
-
-The official SHA256 fingerprint of the Android release signing certificate is:
-
-```
-SHA256: 84:E8:60:74:EC:7E:DA:BB:10:F2:01:79:86:DD:F0:9E:53:1C:AF:7A:73:08:0A:C1:17:2B:80:C4:9C:62:08:27
-```
-
-To verify a downloaded APK against that fingerprint, run:
-
-```sh
-apksigner verify --print-certs /path/to/opennutritracker.apk
-```
-
-The `SHA-256` line in the output should match the value above exactly.
-
-</details>
-
-## Translations
-
-OpenNutriTracker is translated on [Hosted Weblate](https://hosted.weblate.org/engage/opennutritracker/). Translating needs no local setup and no Dart. Pick a language, edit the strings in the browser, and Weblate sends the result back to this repository as pull requests.
-
-<p align="center">
-  <a href="https://hosted.weblate.org/engage/opennutritracker/"><img alt="Translation status per language" src="https://hosted.weblate.org/widget/opennutritracker/multi-auto.svg" /></a>
-</p>
-
-Any language can be started on the [Weblate project page](https://hosted.weblate.org/projects/opennutritracker/); it ships in the app once it is about 90 % translated. The source strings live in [`lib/l10n/intl_en.arb`](lib/l10n/intl_en.arb); see [CONTRIBUTING.md](CONTRIBUTING.md) for how strings and languages are added.
-
-## What people say
-
-> This app has a user-friendly interface and is unburdened by the ridiculous (and constant) cash-grabbing that is chronic across health and wellness apps. As someone suffering from extreme subscription fatigue — I'm not a walking wallet! — this nutrition tracker is a breath of fresh air.
-
-— **Ai C.**, Google Play ★★★★★
-
-> No ads, no paywalls, no bloat, no bs. You can export your data at any moment, or import some from somewhere else, no questions asked. I have experienced no bugs in these last few months. Developers are still active on the repo, so I'm expecting it to get even better.
-
-— **App Store review** ★★★★★
-
-> The most recent version puts this open source nutrition tracker among the best resources out there — all while respecting your privacy through free and open source software. If you care about your fitness and care about having control of your data, look no further!
-
-— **App Store review** ★★★★★
-
-> Excellent simple app without ads that gets the job done. I have legit lost over 10 kg using this app.
-
-— **Esko E.**, Google Play ★★★★★
-
-> Simple, fast and very functional. Finally I don't have to sell my soul to MyFitnessPal ;)
-
-— **Frederic-Leon C.**, Google Play ★★★★★
-
-Reviews are lightly trimmed for length; the full text is on the [App Store](https://apps.apple.com/us/app/opennutritracker/id6451490901) and [Google Play](https://play.google.com/store/apps/details?id=com.opennutritracker.ont.opennutritracker) listings. Bug reports and feature requests belong in the [issue tracker](https://github.com/simonoppowa/OpenNutriTracker/issues), which gets read faster than a review does.
-
-## Mentions
-
-> I've got my OpenNutriTracker here, my open-source calorie counter. Support open-source apps. No ads, no subscriptions, and I don't send my data to anyone — everything stays here.
-
-— [**Cadê a Chave?**, Ep. 1773](https://www.youtube.com/watch?v=DPLtsx-f6Ro&t=498s) (at 8:18), the vlog channel run by the team behind [Coisa de Nerd](https://www.youtube.com/@coisadenerd), one of Brazil's largest tech channels at 11M+ subscribers. Translated from the Portuguese by a contributor in [#375](https://github.com/simonoppowa/OpenNutriTracker/issues/375).
-
-| Where | What |
+| 内容 | 处理方式 |
 | :-- | :-- |
-| [Trendshift](https://trendshift.io/repositories/12625) | Ranked #2 Dart Repository of the Day |
-| [It's All Widgets!](https://itsallwidgets.com/opennutritracker) | Featured in the Flutter app showcase |
-| [AlternativeTo](https://alternativeto.net/software/myfitnesspal/?license=opensource) | Currently the top-ranked open-source MyFitnessPal alternative |
+| 家庭资料与日记 | 保存在本机，沿用上游加密存储机制 |
+| AI 调用 | 经服务披露确认后，将必要的资料、偏好和近期记录摘要发送给所选服务商 |
+| API Key | 由使用者自行配置，应用内配置使用系统安全存储；私有构建可读取本地 `.env` |
+| 公开源码与 CI | 仅提供占位配置，不提供共享 API Key，不提交私有安装包或真实资料 |
 
-If you have written or talked about OpenNutriTracker somewhere, open an issue or a pull request and it can go on this list.
+**对外分发请使用不内置共享密钥的构建。** 客户端内置的密钥可能被提取；不要把带个人密钥的家庭自用 APK 上传到公开仓库或 Release。`.env`、生成的 `env.g.dart`、本地测试输出及安装包不应提交。
 
-## Contributing
+## 运行与构建
 
-Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the project's conventions, including the requirement to target the `develop` branch and the steps for adding localized strings.
+准备 Flutter **3.44.6**、JDK **21** 与 Android SDK。SDK 版本以项目配置为准；常用命令可参考 [AGENTS.md](AGENTS.md) 与 [安卓项目范围](docs/android-project-scope.md)。
 
-Built with Flutter and Dart, following a clean-architecture split (data / domain / presentation) with `flutter_bloc` for state, `get_it` for dependency injection, and encrypted `hive_ce` boxes for local storage. [AGENTS.md](AGENTS.md) is the full architecture and conventions reference.
+```bash
+git clone https://github.com/Bluuok/scientific-weight-loss-app.git
+cd scientific-weight-loss-app
 
-**Getting started:** see [GettingStarted.md](GettingStarted.md) for setting up a local build.
+cp .env.example .env
+flutter pub get
+dart run intl_utils:generate
+dart run build_runner build --delete-conflicting-outputs
 
-**Data export format:** the export bundle (Settings → Export / Import App Data → Export) is documented at [`docs/export-format.md`](docs/export-format.md), covering both the JSON schema and the CSV companion the import / export round-trip uses.
+flutter test test/features/meal_planner
+flutter build apk --debug --flavor develop
+```
 
-**Food database backend:** the multi-source food database lives in its own repository, [OpenNutriTracker-Backend](https://github.com/simonoppowa/OpenNutriTracker-Backend), which holds the schema, import pipeline, and translation tooling. Self-hosting it and pointing a local build at your own Supabase project is documented at [`docs/supabase-self-hosting.md`](docs/supabase-self-hosting.md).
+`.env.example` 中的值是占位符；需要外部服务时请使用自己的配置。餐单 AI 也可以在应用的“饮食偏好 → 高级设置（家人协助）”中设置，并完成服务披露确认。本项目不提供公共 API 额度。
 
-Thanks to all the contributors:
+Windows 本地可使用 `run_android.ps1`，它要求将 Flutter 与 Android 工具放在项目 `.tools/` 下。该目录及本地缓存不会提交。
 
-<a href="https://github.com/simonoppowa/OpenNutriTracker/graphs/contributors">
-<img src="https://contrib.rocks/image?repo=simonoppowa/OpenNutriTracker" />
-</a>
+## 验证与贡献
 
-## Disclaimer
+默认 GitHub Actions 执行静态分析、完整 Flutter 测试和 Android 调试 APK 构建。模拟器集成测试通过手动参数启用；CI 使用占位凭据，不调用真实 AI。CI 构建通过不等于已经完成所有机型或真实服务验收。
 
-> [!WARNING]
-> OpenNutriTracker is not a medical application. All data provided is not validated and
-> should be used with caution. Please maintain a healthy lifestyle and consult a
-> professional if you have any problems. Use during illness, pregnancy or lactation is
-> not recommended.
+项目开发中已进行界面大字体测试、模拟资料下的 DeepSeek 调用、vivo 真机覆盖安装与记录保留检查。具体功能和机型仍需按改动范围验证。
 
-> [!NOTE]
-> The application is still under construction. Errors, bugs and crashes might occur.
+欢迎围绕以下方向提出 Issue 或 PR：
 
-## Acknowledgments
+- 中文老年人使用体验与无障碍操作。
+- 有授权、可追溯、状态与单位明确的食物数据。
+- 健康筛查、餐单约束及记录一致性的回归测试。
+- 更容易采购、称量与制作的家常食谱。
 
-The food database used in OpenNutriTracker is powered by [Open Food Facts](https://world.openfoodfacts.org/) together with a multi-source reference backend hosted in Supabase: [USDA FoodData Central](https://fdc.nal.usda.gov/) (CC0) and the [Bundeslebensmittelschlüssel](https://www.blsdb.de) 4.0 (CC BY 4.0, © Max Rubner-Institut), with the [Anuvaad INDB](https://anuvaad.org.in) (CC BY 4.0) and [TBCA Brazil](https://www.tbca.net.br) (USP/FoRC) prepared as future sources. The schema and import pipeline live in the [OpenNutriTracker-Backend](https://github.com/simonoppowa/OpenNutriTracker-Backend) repository; self-hosting is documented in [`docs/supabase-self-hosting.md`](docs/supabase-self-hosting.md).
+请保持 Android 范围，使用模拟资料，不提交密钥、个人安装包或真实健康记录。代码改动遵循仓库 [贡献说明](CONTRIBUTING.md) 和 [代理工作约定](AGENTS.md)。
 
-Dietary Reference Intake values for the micronutrient panel come from the U.S. National Academies' Institute of Medicine tables. The in-app Sources & References screen (one tap from the home calorie ring or the profile BMI card) lists the peer-reviewed sources used for energy needs, BMI classification, macro distribution, MET activity calories, and non-binary calorie estimation.
+## 来源与许可
 
-## License
+本项目基于 [simonoppowa/OpenNutriTracker](https://github.com/simonoppowa/OpenNutriTracker) 二次开发，保留上游版权声明，并遵循 [GNU GPL v3](LICENSE)。感谢上游项目及其贡献者提供的基础能力。
 
-This project is licensed under the GNU General Public License v3.0. See the [LICENSE](LICENSE) file for more information.
-
-## Contact
-
-For questions, suggestions, or collaborations, contact the maintainer:
-
-**Simon Oppowa**
-
-- GitHub: [@simonoppowa](https://github.com/simonoppowa)
-- Email: [opennutritracker-dev@pm.me](mailto:opennutritracker-dev@pm.me)
+**科学饮食的目标：让饮食计划更清楚，让每天的执行更容易。**
