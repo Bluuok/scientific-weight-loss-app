@@ -119,6 +119,27 @@ void main() {
     await Hive.close();
     await dir.delete(recursive: true);
   });
+  test('local price entries persist across encrypted Hive restart', () async {
+    final today = localDay(DateTime.now());
+    final revision = await repo.generate(today);
+    final before = repo.groceryEstimate(revision['plan']);
+    expect(before['full_estimate_yuan'], isNull);
+    await repo.setUnitPrice('rice', 9);
+    final partly = repo.groceryEstimate(revision['plan']);
+    expect(partly['priced_items'], 1);
+    expect(partly['full_estimate_yuan'], isNull);
+    await Hive.close();
+    await open();
+    expect(repo.unitPrices['rice'], 9);
+    final after = repo.groceryEstimate(revision['plan']);
+    expect(after['priced_items'], 1);
+    await expectLater(
+      repo.setUnitPrice('rice', -3),
+      throwsA(isA<PlanRejected>()),
+    );
+    await repo.setUnitPrice('rice', null);
+    expect(repo.unitPrices.containsKey('rice'), false);
+  });
   test(
     'ineligible profile cannot generate or log an old weight-loss plan',
     () async {
