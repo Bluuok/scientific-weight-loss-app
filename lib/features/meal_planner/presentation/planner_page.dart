@@ -259,15 +259,21 @@ class _PlannerPageState extends State<PlannerPage> {
             (d) => d['date'] == today,
           );
     final records = state['records'] as Map;
-    int count(String date) => ['breakfast', 'lunch', 'dinner', 'review']
-        .where(
-          (slot) =>
-              (records['$date/$slot']?['status'] ?? 'pending') != 'pending',
-        )
-        .length;
+    bool hasRecord(String date, String slot) =>
+        (records['$date/$slot']?['status'] ?? 'pending') != 'pending';
+    int mealRecordCount(String date) =>
+        ['breakfast', 'lunch', 'dinner']
+            .where((slot) => hasRecord(date, slot))
+            .length;
     final days = current == null
         ? <dynamic>[]
         : current['plan']['days'] as List;
+    final weekMealsRecorded = days.fold<int>(
+      0, (total, day) => total + mealRecordCount(day['date'] as String),
+    );
+    final weekReviewsRecorded = days.where(
+      (day) => hasRecord(day['date'] as String, 'review'),
+    ).length;
     return Scaffold(
       appBar: AppBar(
         title: Text(t('title')),
@@ -344,7 +350,9 @@ class _PlannerPageState extends State<PlannerPage> {
                   NavigationOptions.manageProfilesRoute,
                 ),
               ),
-            if (_profileIssue == null && repo.enforceMedicalScreen)
+            if (_profileIssue == null &&
+                repo.enforceMedicalScreen &&
+                repo.medicalSafetyIssue != null)
               plannerSecondaryButton(
                 'medical-risk-check',
                 repo.medicalSafetyIssue == null
@@ -363,6 +371,7 @@ class _PlannerPageState extends State<PlannerPage> {
               ),
             if (_profileIssue == null && todayMeal != null)
               Card(
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -375,10 +384,27 @@ class _PlannerPageState extends State<PlannerPage> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Text('$today · 已记录 ${count(today)}/4 项'),
+                      Text(
+                        '$today · ${mealRecordCount(today)}/3餐有记录'
+                        ' · ${hasRecord(today, 'review') ? '已回顾' : '未回顾'}',
+                      ),
+                      const SizedBox(height: 8),
                       ...List<Json>.from(todayMeal['meals']).map(
-                        (m) => Text(
-                          "${t(m['slot'])}：${repo.catalog.recipes[m['recipe_id']]!['name']}",
+                        (m) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "${t(m['slot'])} · ${repo.catalog.recipes[m['recipe_id']]!['name']}",
+                                style: Theme.of(context).textTheme.bodyLarge,
+                              ),
+                              Text(
+                                '记录状态：${t(records['$today/${m['slot']}']?['status'] ?? 'pending')}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                       SizedBox(
@@ -391,6 +417,17 @@ class _PlannerPageState extends State<PlannerPage> {
                       ),
                     ],
                   ),
+                ),
+              ),
+            if (_profileIssue == null &&
+                repo.enforceMedicalScreen &&
+                repo.medicalSafetyIssue == null)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: plannerSecondaryButton(
+                  'medical-risk-check',
+                  '健康核对已完成 · 查看或更新',
+                  busy ? null : _openMedicalSafety,
                 ),
               ),
             if (_profileIssue == null && todayMeal == null)
@@ -452,8 +489,10 @@ class _PlannerPageState extends State<PlannerPage> {
                       : t('fallbackNotice'),
                 ),
               Text(
-                '${t('progress')}: ${days.fold<int>(0, (n, d) => n + count(d['date']))}/28',
+                '本周记录：$weekMealsRecorded/21餐 · 回顾$weekReviewsRecorded/7天',
+                style: Theme.of(context).textTheme.bodyLarge,
               ),
+              const Text('只表示有记录，包含明确没吃；不代表营养达标或减重效果。'),
               plannerSecondaryButton(
                 'grocery-list',
                 '本周采购清单与当地菜价',
@@ -481,7 +520,8 @@ class _PlannerPageState extends State<PlannerPage> {
                         style: const TextStyle(fontSize: 20),
                       ),
                       subtitle: Text(
-                        '${count(day['date'])}/4 ${t('recorded')}',
+                        '${mealRecordCount(day['date'])}/3餐有记录'
+                        ' · ${hasRecord(day['date'], 'review') ? '已回顾' : '未回顾'}',
                       ),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: busy
@@ -846,14 +886,6 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                       ),
                       if (meal['simple']) Text(t('simpleMeal')),
                       Text(
-                        (recipe['ingredients'] as Map).entries
-                            .map(
-                              (e) =>
-                                  "${repo.catalog.foods[e.key]!['name']} ${RecipeSteps.grams(e.key as String, e.value * meal['portion'])}克",
-                            )
-                            .join('、'),
-                      ),
-                      Text(
                         '本餐用油 ${RecipeSteps.grams('oil', ((recipe['ingredients']['oil'] ?? 0) as num) * meal['portion'])}克 · 食盐 ${RecipeSteps.grams('salt', ((recipe['ingredients']['salt'] ?? 0) as num) * meal['portion'])}克',
                         style: const TextStyle(
                           fontSize: 19,
@@ -911,6 +943,7 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                                   status != 'pending' ? 'pending' : 'completed',
                                 )
                               : null,
+                          primary: status == 'pending',
                         ),
                       ),
                       plannerSurface(
