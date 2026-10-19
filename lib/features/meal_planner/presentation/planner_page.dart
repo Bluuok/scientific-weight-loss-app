@@ -11,6 +11,7 @@ import '../domain/planner.dart';
 import '../domain/recipe_steps.dart';
 import '../domain/weight_loss_eligibility.dart';
 import 'planner_text.dart';
+import 'grocery_budget_dialog.dart';
 
 Widget plannerSurface(String id, Widget child) =>
     Semantics(identifier: 'planner-$id', child: child);
@@ -420,6 +421,17 @@ class _PlannerPageState extends State<PlannerPage> {
                 ),
               Text(
                 '${t('progress')}: ${days.fold<int>(0, (n, d) => n + count(d['date']))}/28',
+              ),
+              plannerSecondaryButton(
+                'grocery-list',
+                '本周采购清单与当地菜价',
+                busy ? null : () => showDialog<void>(
+                  context: context,
+                  builder: (_) => GroceryBudgetDialog(
+                    repo: repo,
+                    plan: current['plan'],
+                  ),
+                ),
               ),
               ...days.map(
                 (day) => Card(
