@@ -493,6 +493,52 @@ class _PlannerPageState extends State<PlannerPage> {
                 primary: false,
               ),
             ],
+            if (current != null)
+              plannerSurface(
+                'cycle-progress',
+                ExpansionTile(
+                  title: const Text('本月四阶段执行复盘'),
+                  subtitle: const Text('只统计主动记录；未记录不等于没吃'),
+                  children: [
+                    Builder(
+                      builder: (context) {
+                        final review = repo.cycleReview(today);
+                        if (review['status'] == 'no_plan') {
+                          return const Text('暂无可复盘的餐单。');
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "${review['cycle_start']} — ${review['cycle_end']}",
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                "截至${review['as_of']}：按计划记录 ${review['recorded_as_planned']} 餐、"
+                                "替换记录 ${review['recorded_replaced']} 餐、"
+                                "明确没吃 ${review['explicitly_skipped']} 餐、"
+                                "未记录 ${review['unknown_meals']} 餐。",
+                              ),
+                              for (final phase in (review['phases'] as List))
+                                Text(
+                                  "第${phase['phase']}阶段："
+                                  "有记录 ${phase['recorded_as_planned'] + phase['recorded_replaced'] + phase['explicitly_skipped']}/"
+                                  "${phase['planned_meals_due']} 餐；"
+                                  "未记录 ${phase['unknown_meals']} 餐",
+                                ),
+                              const Text(
+                                '这些数字只是记录覆盖情况，无法证明血压改善、保留肌肉或实际减脂效果。',
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
             if (current != null && current['monthly_direction'] != null)
               plannerSurface(
                 'month-details',
