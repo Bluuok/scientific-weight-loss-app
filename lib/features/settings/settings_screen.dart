@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:opennutritracker/core/domain/entity/app_theme_entity.dart';
 import 'package:opennutritracker/core/domain/entity/body_weight_unit_entity.dart';
 import 'package:opennutritracker/core/l10n/shipped_locales.dart';
 import 'package:opennutritracker/core/presentation/sources_screen.dart';
@@ -21,7 +20,6 @@ import 'package:opennutritracker/core/utils/energy_unit_provider.dart';
 import 'package:opennutritracker/core/utils/locator.dart';
 import 'package:opennutritracker/core/utils/notification_service.dart';
 import 'package:opennutritracker/core/utils/locale_provider.dart';
-import 'package:opennutritracker/core/utils/theme_mode_provider.dart';
 import 'package:opennutritracker/core/utils/url_const.dart';
 import 'package:opennutritracker/features/diary/presentation/bloc/calendar_day_bloc.dart';
 import 'package:opennutritracker/features/diary/presentation/bloc/diary_bloc.dart';
@@ -395,8 +393,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _SettingsTile(
                     palette: palette,
                     icon: Icons.brightness_medium_rounded,
-                    title: S.of(context).settingsThemeLabel,
-                    onTap: () => _showThemeDialog(context, state.appTheme),
+                    title: '浅色模式',
+                    subtitle: '已固定为明亮界面，夜间也不变色',
+                    onTap: () => _showThemeDialog(context),
                   ),
                   _SettingsTile(
                     identifier: 'settings-accent-colour',
@@ -1159,74 +1158,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
-  void _showThemeDialog(BuildContext context, AppThemeEntity currentAppTheme) {
-    AppThemeEntity selectedTheme = currentAppTheme;
-    showDialog(
+  void _showThemeDialog(BuildContext context) {
+    showDialog<void>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          contentPadding: EdgeInsets.zero,
-          title: Text(S.of(context).settingsThemeLabel),
-          content: StatefulBuilder(
-            builder:
-                (
-                  BuildContext context,
-                  void Function(void Function()) setState,
-                ) {
-                  return RadioGroup(
-                    groupValue: selectedTheme,
-                    onChanged: (value) {
-                      setState(() {
-                        selectedTheme = value as AppThemeEntity;
-                      });
-                    },
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        RadioListTile(
-                          title: Text(
-                            S.of(context).settingsThemeSystemDefaultLabel,
-                          ),
-                          value: AppThemeEntity.system,
-                        ),
-                        RadioListTile(
-                          title: Text(S.of(context).settingsThemeLightLabel),
-                          value: AppThemeEntity.light,
-                        ),
-                        RadioListTile(
-                          title: Text(S.of(context).settingsThemeDarkLabel),
-                          value: AppThemeEntity.dark,
-                        ),
-                      ],
-                    ),
-                  );
-                },
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('固定浅色模式'),
+        content: const Text(
+          '为了看清字和操作按钮，当前版本固定使用明亮背景。'
+          '早餐、午餐和晚餐用不同的柔和颜色区分，'
+          '即使手机切换到深色模式，这里也不会变暗。',
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('知道了'),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(S.of(context).dialogCancelLabel),
-            ),
-            TextButton(
-              onPressed: () async {
-                _settingsBloc.setAppTheme(selectedTheme);
-                _settingsBloc.add(LoadSettingsEvent());
-                setState(() {
-                  // Update Theme
-                  Provider.of<ThemeModeProvider>(
-                    context,
-                    listen: false,
-                  ).updateTheme(selectedTheme);
-                });
-                Navigator.of(context).pop();
-              },
-              child: Text(S.of(context).dialogOKLabel),
-            ),
-          ],
-        );
-      },
+        ],
+      ),
     );
   }
 
