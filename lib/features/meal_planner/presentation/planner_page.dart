@@ -13,6 +13,7 @@ import '../domain/weight_loss_eligibility.dart';
 import 'planner_text.dart';
 import 'grocery_budget_dialog.dart';
 import 'medical_safety_page.dart';
+import 'planner_visual.dart';
 
 Widget plannerSurface(String id, Widget child) =>
     Semantics(identifier: 'planner-$id', child: child);
@@ -177,12 +178,14 @@ class _PlannerPageState extends State<PlannerPage> {
     }
   }
 
-  Future<void> _openDay(Json day) async {
+  Future<void> _openDay(Json day, {String? initialSlot}) async {
     await Navigator.push(
       context,
       MaterialPageRoute<void>(
         settings: const RouteSettings(name: NavigationOptions.plannerDayRoute),
-        builder: (_) => PlannerDayPage(repo: repo, day: copyJson(day)),
+        builder: (_) => PlannerDayPage(
+          repo: repo, day: copyJson(day), initialSlot: initialSlot,
+        ),
       ),
     );
     final user = await repo.users.getUserData();
@@ -259,19 +262,23 @@ class _PlannerPageState extends State<PlannerPage> {
             (d) => d['date'] == today,
           );
     final records = state['records'] as Map;
-    int count(String date) => ['breakfast', 'lunch', 'dinner', 'review']
-        .where(
-          (slot) =>
-              (records['$date/$slot']?['status'] ?? 'pending') != 'pending',
-        )
-        .length;
+    bool hasRecord(String date, String slot) =>
+        (records['$date/$slot']?['status'] ?? 'pending') != 'pending';
+    int mealRecordCount(String date) =>
+        ['breakfast', 'lunch', 'dinner']
+            .where((slot) => hasRecord(date, slot))
+            .length;
     final days = current == null
         ? <dynamic>[]
         : current['plan']['days'] as List;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(t('title')),
-        actions: [
+    final weekMealsRecorded = days.fold<int>(
+      0, (total, day) => total + mealRecordCount(day['date'] as String),
+    );
+    final weekReviewsRecorded = days.where(
+      (day) => hasRecord(day['date'] as String, 'review'),
+    ).length;
+    final largeToolbar = MediaQuery.textScalerOf(context).scale(18) > 22;
+    final toolbarActions = <Widget>[
           Semantics(
             identifier: 'planner-help',
             child: TextButton(onPressed: _help, child: const Text('怎么用')),
@@ -296,18 +303,48 @@ class _PlannerPageState extends State<PlannerPage> {
               ),
             ),
           ),
-        ],
+    ];
+    return Scaffold(
+      backgroundColor: PlannerVisual.background,
+      appBar: AppBar(
+        title: Text(t('title')),
+        actions: largeToolbar ? null : toolbarActions,
+        bottom: largeToolbar
+            ? PreferredSize(
+                preferredSize: Size.fromHeight(
+                  56 + MediaQuery.textScalerOf(context).scale(18) - 18,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: toolbarActions,
+                ),
+              )
+            : null,
       ),
       body: Semantics(
         identifier: 'planner-weeks',
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            const Text(
-              'AI 科学饮食计划',
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '每天吃好三顿饭',
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '先看今天的菜，吃过再记录。其他安排放在下面。',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: PlannerVisual.muted,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const Text('每天看餐单，吃完记一下。'),
             if (busy) ...[
               const LinearProgressIndicator(),
               const Text('AI 正在安排餐单，请稍候。完成后会显示在这里。'),
@@ -328,10 +365,23 @@ class _PlannerPageState extends State<PlannerPage> {
               ),
             if (_profileIssue != null)
               Card(
+                color: PlannerVisual.caution,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Text(
-                    '$_profileIssue\n如果给家人使用，请先添加或切换家人资料。你的饮食记录仍可使用。',
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.info_outline,
+                          color: PlannerVisual.cautionInk, size: 30),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          '先检查家人的身体资料\n$_profileIssue\n原有饮食记录不会丢失。',
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(color: PlannerVisual.cautionInk),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -344,165 +394,304 @@ class _PlannerPageState extends State<PlannerPage> {
                   NavigationOptions.manageProfilesRoute,
                 ),
               ),
-            if (_profileIssue == null && repo.enforceMedicalScreen)
-              plannerSecondaryButton(
-                'medical-risk-check',
-                repo.medicalSafetyIssue == null
-                    ? '查看或更新健康风险核对'
-                    : '开始前必填：健康风险核对',
-                busy ? null : _openMedicalSafety,
-              ),
             if (_profileIssue == null &&
                 repo.enforceMedicalScreen &&
                 repo.medicalSafetyIssue != null)
               Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Text(repo.medicalSafetyIssue!),
-                ),
-              ),
-            if (_profileIssue == null && todayMeal != null)
-              Card(
+                color: PlannerVisual.caution,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        '今天吃什么',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        children: [
+                          const Icon(Icons.health_and_safety_outlined,
+                              color: PlannerVisual.cautionInk, size: 30),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text('第1步：先确认身体情况',
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(color: PlannerVisual.cautionInk)),
+                          ),
+                        ],
                       ),
-                      Text('$today · 已记录 ${count(today)}/4 项'),
-                      ...List<Json>.from(todayMeal['meals']).map(
-                        (m) => Text(
-                          "${t(m['slot'])}：${repo.catalog.recipes[m['recipe_id']]!['name']}",
-                        ),
-                      ),
+                      const SizedBox(height: 8),
+                      Text(repo.medicalSafetyIssue!,
+                        style: Theme.of(context).textTheme.bodyLarge
+                            ?.copyWith(color: PlannerVisual.cautionInk)),
+                      const SizedBox(height: 8),
                       SizedBox(
                         width: double.infinity,
                         child: plannerButton(
-                          'open-today',
-                          '查看今天餐单并记录',
-                          busy ? null : () => _openDay(copyJson(todayMeal)),
+                          'medical-risk-check', '开始健康核对',
+                          busy ? null : _openMedicalSafety,
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-            if (_profileIssue == null && todayMeal == null)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Text('先在“我的资料”确认身体资料，再选好饮食偏好，最后生成餐单。生成后每天在这里查看。'),
-              ),
-            plannerButton(
-              'generate',
-              current == null ? 'AI 生成7天餐单（从今天起）' : t('nextWeek'),
-              busy || _profileIssue != null
-                  ? null
-                  : () async {
-                      String start;
-                      start = weeks.isEmpty
-                          ? today
-                          : nextDay(weeks.first['plan']['period_start'], 7);
-                      if (start.compareTo(today) < 0) start = today;
-                      await _generate(start);
-                    },
-              primary: current == null,
-            ),
-            if (weeks.isNotEmpty)
-              const Padding(
-                padding: EdgeInsets.only(top: 12),
-                child: Text('本周与其他日期'),
-              ),
-            if (weeks.isNotEmpty)
-              Semantics(
-                identifier: 'planner-week-select',
-                child: DropdownButton<String>(
-                  isExpanded: true,
-                  value: current!['id'],
-                  items: weeks
-                      .map(
-                        (p) => DropdownMenuItem<String>(
-                          value: p['id'],
-                          child: Text(
-                            '${p['plan']['period_start']} — ${nextDay(p['plan']['period_start'], 6)}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+            if (_profileIssue == null && todayMeal != null)
+              Card(
+                color: Colors.white,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.restaurant_menu_rounded,
+                              color: PlannerVisual.infoInk, size: 30),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('今天吃什么',
+                                  style: Theme.of(context).textTheme.headlineSmall),
+                                Text('$today · ${mealRecordCount(today)}/3餐有记录',
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(color: PlannerVisual.muted)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      plannerButton(
+                        'open-today',
+                        mealRecordCount(today) == 3
+                            ? '查看今天的记录和食谱'
+                            : '查看食谱 · 吃完记一下',
+                        busy ? null : () => _openDay(copyJson(todayMeal)),
+                      ),
+                      const SizedBox(height: 14),
+                      ...List<Json>.from(todayMeal['meals']).map(
+                        (m) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: PlannerMealRow(
+                            slot: m['slot'] as String,
+                            title: t(m['slot']),
+                            name: repo.catalog.recipes[m['recipe_id']]!['name'] as String,
+                            status: (records['$today/${m['slot']}']?['status'] ?? 'pending') as String,
+                            onTap: busy ? null : () => _openDay(
+                              copyJson(todayMeal), initialSlot: m['slot'] as String,
+                            ),
                           ),
                         ),
-                      )
-                      .toList(),
-                  onChanged: busy ? null : (v) => setState(() => selected = v),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        hasRecord(today, 'review') ? '今日回顾已经保存' : '吃完三餐后，可以写一句今天的感受',
+                        style: Theme.of(context).textTheme.bodySmall
+                            ?.copyWith(color: PlannerVisual.muted),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            if (_profileIssue == null &&
+                repo.enforceMedicalScreen &&
+                repo.medicalSafetyIssue == null)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: plannerSecondaryButton(
+                  'medical-risk-check',
+                  '健康核对已完成 · 查看或更新',
+                  busy ? null : _openMedicalSafety,
+                ),
+              ),
+            if (_profileIssue == null && todayMeal == null)
+              Card(
+                color: PlannerVisual.info,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.lightbulb_outline,
+                          color: PlannerVisual.infoInk, size: 28),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          '还没有今天的餐单。\n完成身体资料和健康核对后，生成一周菜单就能每天照着吃。',
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(color: PlannerVisual.infoInk),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            if (current == null &&
+                (_profileIssue != null ||
+                 !repo.enforceMedicalScreen ||
+                 repo.medicalSafetyIssue == null))
+              SizedBox(
+                width: double.infinity,
+                child: plannerButton(
+                  'generate',
+                  '第2步：生成一周菜谱',
+                  busy || _profileIssue != null
+                      ? null
+                      : () async {
+                          var start = weeks.isEmpty
+                              ? today
+                              : nextDay(weeks.first['plan']['period_start'], 7);
+                          if (start.compareTo(today) < 0) start = today;
+                          await _generate(start);
+                        },
                 ),
               ),
             if (current != null) ...[
-              Text(
-                '${t('source')}: ${current['notice'] == 'local recipe swap' ? t('manual') : t(current['source'])} · 第${current['version']}版',
-              ),
-              if (current['notice'] != '')
-                Text(
-                  current['notice'] == 'local recipe swap'
-                      ? '已按你的选择换菜，并重新核验营养。'
-                      : current['source'] == 'ai'
-                      ? plannerErrorText(current['notice'])
-                      : t('fallbackNotice'),
-                ),
-              Text(
-                '${t('progress')}: ${days.fold<int>(0, (n, d) => n + count(d['date']))}/28',
-              ),
-              plannerSecondaryButton(
-                'grocery-list',
-                '本周采购清单与当地菜价',
-                busy ? null : () => showDialog<void>(
-                  context: context,
-                  builder: (_) => GroceryBudgetDialog(
-                    repo: repo,
-                    plan: current['plan'],
+              const SizedBox(height: 14),
+              Card(
+                color: PlannerVisual.info,
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.fact_check_outlined,
+                          color: PlannerVisual.infoInk, size: 30),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(days.any((day) => day['date'] == today)
+                                ? '本周记录情况' : '所选一周记录情况',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(color: PlannerVisual.infoInk)),
+                            Text('$weekMealsRecorded / 21 餐已记录 · '
+                              '$weekReviewsRecorded / 7 天已回顾',
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: PlannerVisual.infoInk)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              ...days.map(
-                (day) => Card(
-                  child: plannerSurface(
-                    'control-7691',
-                    ListTile(
-                      contentPadding: const EdgeInsets.all(16),
-                      leading: Icon(
-                        day['date'] == today
-                            ? Icons.today
-                            : Icons.calendar_today,
+              Text('包含主动标记“没吃”的记录，不代表饮食或减重达标。',
+                style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 14),
+              Card(
+                color: Colors.white,
+                child: plannerSurface(
+                  'weekly-tools',
+                  ExpansionTile(
+                    leading: const Icon(Icons.calendar_month_outlined,
+                        color: PlannerVisual.infoInk, size: 30),
+                    title: const Text('查看一周安排'),
+                    subtitle: const Text('其他日期、采购清单、下周菜单'),
+                    childrenPadding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
+                    children: [
+                      Text('当前查看哪一周',
+                          style: Theme.of(context).textTheme.titleMedium),
+                      Semantics(
+                        identifier: 'planner-week-select',
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          value: current['id'],
+                          items: weeks.map(
+                            (p) => DropdownMenuItem<String>(
+                              value: p['id'],
+                              child: Text(
+                                "${p['plan']['period_start']} — ${nextDay(p['plan']['period_start'], 6)}",
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ).toList(),
+                          onChanged: busy ? null : (value) =>
+                              setState(() => selected = value),
+                        ),
                       ),
-                      title: Text(
-                        '${day['date']}${day['date'] == today ? ' · ${t('today')}' : ''}',
-                        style: const TextStyle(fontSize: 20),
+                      const SizedBox(height: 8),
+                      for (final day in days)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Material(
+                            color: day['date'] == today
+                                ? PlannerVisual.lunch
+                                : PlannerVisual.background,
+                            borderRadius: BorderRadius.circular(16),
+                            child: plannerSurface(
+                              'control-7691',
+                              ListTile(
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 5),
+                                leading: Icon(
+                                  day['date'] == today
+                                    ? Icons.today_rounded
+                                    : Icons.event_note_rounded,
+                                  color: day['date'] == today
+                                    ? PlannerVisual.lunchInk
+                                    : PlannerVisual.infoInk,
+                                ),
+                                title: Text(
+                                  "${day['date']}${day['date'] == today ? ' · 今天' : ''}",
+                                ),
+                                subtitle: Text(
+                                  "${mealRecordCount(day['date'])}/3餐有记录 · "
+                                  "${hasRecord(day['date'], 'review') ? '已回顾' : '未回顾'}",
+                                ),
+                                trailing: const Icon(Icons.chevron_right),
+                                onTap: busy ? null : () => _openDay(
+                                    Map<String, dynamic>.from(day)),
+                              ),
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 8),
+                      plannerSecondaryButton(
+                        'grocery-list',
+                        '查看7天买菜清单',
+                        busy ? null : () => showDialog<void>(
+                          context: context,
+                          builder: (_) => GroceryBudgetDialog(
+                              repo: repo, plan: current['plan']),
+                        ),
                       ),
-                      subtitle: Text(
-                        '${count(day['date'])}/4 ${t('recorded')}',
+                      plannerSecondaryButton(
+                        'generate',
+                        '安排下一周菜谱',
+                        busy ? null : () async {
+                          var start = nextDay(
+                              weeks.first['plan']['period_start'], 7);
+                          if (start.compareTo(today) < 0) start = today;
+                          await _generate(start);
+                        },
                       ),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: busy
-                          ? null
-                          : () async {
-                              await _openDay(Map<String, dynamic>.from(day));
-                            },
-                    ),
+                      plannerSecondaryButton(
+                        'adjust',
+                        busy ? '正在调整菜单…' : '调整本周还没吃的菜',
+                        busy ? null : () => _generate(
+                          current['plan']['period_start'],
+                          previous: current,
+                        ),
+                      ),
+                      Text(
+                        '菜谱来源：${current['notice'] == 'local recipe swap' ? '手动换菜' : t(current['source'])} · '
+                        '第${current['version']}版',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      if (current['notice'] != '')
+                        Text(
+                          current['notice'] == 'local recipe swap'
+                            ? '已按选择换菜并重新核算营养。'
+                            : current['source'] == 'ai'
+                              ? plannerErrorText(current['notice'])
+                              : t('fallbackNotice'),
+                        ),
+                    ],
                   ),
                 ),
-              ),
-              plannerButton(
-                'adjust',
-                busy ? 'AI 正在调整，请稍候…' : '调整剩余餐单',
-                busy
-                    ? null
-                    : () => _generate(
-                        current['plan']['period_start'],
-                        previous: current,
-                      ),
-                primary: false,
               ),
             ],
             if (current != null)
@@ -656,12 +845,18 @@ class _PlannerPageState extends State<PlannerPage> {
 class PlannerDayPage extends StatefulWidget {
   final PlannerRepository repo;
   final Json day;
-  const PlannerDayPage({super.key, required this.repo, required this.day});
+  final String? initialSlot;
+  const PlannerDayPage({
+    super.key, required this.repo, required this.day, this.initialSlot,
+  });
   @override
   State<PlannerDayPage> createState() => _PlannerDayPageState();
 }
 
 class _PlannerDayPageState extends State<PlannerDayPage> {
+  final _mealKeys = <String, GlobalKey>{
+    for (final slot in ['breakfast', 'lunch', 'dinner']) slot: GlobalKey(),
+  };
   bool busy = false;
   String? error, savingSlot;
   late final AppLifecycleListener _lifecycle;
@@ -674,6 +869,16 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
         if (mounted) setState(() {});
       },
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || (widget.repo.enforceMedicalScreen &&
+          widget.repo.medicalSafetyIssue != null)) {
+        return;
+      }
+      final target = _mealKeys[widget.initialSlot]?.currentContext;
+      if (target != null) {
+        unawaited(Scrollable.ensureVisible(target, alignment: 0));
+      }
+    });
   }
 
   @override
@@ -790,69 +995,164 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
     final date = widget.day['date'] as String;
     final n = repo.catalog.dayNutrition(widget.day);
     final records = repo.state['records'];
+    final isToday = date == localDay(repo.now());
     final futureDay = date.compareTo(localDay(repo.now())) > 0;
-    final editable = !futureDay && !busy;
+    final medicalBlocked = repo.enforceMedicalScreen &&
+        repo.medicalSafetyIssue != null;
+    final editable = !futureDay && !busy && !medicalBlocked;
+    final recordedMeals = ['breakfast', 'lunch', 'dinner'].where(
+      (slot) => (records['$date/$slot']?['status'] ?? 'pending') != 'pending',
+    ).length;
     return Scaffold(
+      backgroundColor: PlannerVisual.background,
       appBar: AppBar(title: Text(date)),
       body: Semantics(
         identifier: 'planner-day-list',
-        child: ListView(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
+          child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('先看食材和做法，真正吃完后再记录。点错可以撤销。'),
+            Card(
+              color: PlannerVisual.info,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    const Icon(Icons.checklist_rounded,
+                        size: 32, color: PlannerVisual.infoInk),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(isToday ? '今天的三餐' : '这一天的三餐',
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(color: PlannerVisual.infoInk)),
+                          Text('$recordedMeals/3餐有记录 · 先看做法，吃过再打卡',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: PlannerVisual.infoInk)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             if (busy) const LinearProgressIndicator(),
             if (error != null)
               Text(
                 error!,
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
-            if (date.compareTo(localDay(repo.now())) > 0)
-              const Text('这是未来的餐单，可以先查看或换餐，到当天再记录吃了什么。'),
-            plannerSurface(
-              'nutrition-details',
-              ExpansionTile(
-                title: const Text('查看全天营养估算'),
-                children: [
-                  Text(
-                    '${t('planned')}: ${n['kcal'].round()} 千卡 · ${t('protein')} ${n['protein'].toStringAsFixed(1)} 克\n'
-                    '${t('sodium')} ${n['sodium'].round()} 毫克 · ${t('saltEquivalent')} ${(n['sodium'] * .0025).toStringAsFixed(1)} 克 · ${t('oil')} ${n['oil'].toStringAsFixed(1)} 克',
-                    style: const TextStyle(fontSize: 18),
+            if (futureDay)
+              const Text('这是未来的餐单；可以先看菜谱，到当天再记录。'),
+            if (recordedMeals == 3 &&
+                !futureDay && !medicalBlocked &&
+                records['$date/review']?['status'] != 'completed')
+              Card(
+                color: PlannerVisual.lunch,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(isToday ? '今天三餐都有记录了' : '这一天的三餐都有记录了',
+                        style: Theme.of(context).textTheme.titleMedium
+                          ?.copyWith(color: PlannerVisual.lunchInk)),
+                      const Text('可以写一句今天吃得怎么样，也可以稍后再写。'),
+                      plannerButton(
+                        'quick-review',
+                        isToday ? '写一句今天的感受' : '写一句当天的感受',
+                        busy ? null : () async {
+                          final note = await input(t('reviewHint'));
+                          if (note != null) {
+                            await record(null, 'completed', notes: note);
+                          }
+                        },
+                      ),
+                    ],
                   ),
-                  Text(t('unknownNote')),
-                ],
+                ),
               ),
-            ),
+            if (medicalBlocked)
+              Card(
+                color: PlannerVisual.caution,
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        repo.medicalSafetyIssue!,
+                        style: const TextStyle(
+                          color: PlannerVisual.cautionInk, fontSize: 18),
+                      ),
+                      plannerSecondaryButton(
+                        'day-medical-risk-check',
+                        '重新核对健康风险',
+                        busy ? null : () async {
+                          await Navigator.push<void>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => MedicalSafetyPage(repo: repo),
+                            ),
+                          );
+                          if (mounted) setState(() {});
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ...List<Json>.from(widget.day['meals']).map((meal) {
               final recipe = repo.catalog.recipes[meal['recipe_id']]!;
               final status =
                   records['$date/${meal['slot']}']?['status'] ?? 'pending';
               final note = records['$date/${meal['slot']}']?['notes'] ?? '';
-              return Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${t(meal['slot'])} · ${t(status)}',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+              return Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Card(
+                  key: _mealKeys[meal['slot']],
+                  color: PlannerVisual.mealColor(meal['slot'] as String),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              PlannerVisual.mealIcon(meal['slot'] as String),
+                              size: 30,
+                              color: PlannerVisual.mealInk(meal['slot'] as String),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(t(meal['slot']),
+                                    style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(color: PlannerVisual.mealInk(
+                                          meal['slot'] as String))),
+                                  Text(
+                                    PlannerVisual.statusText(status as String),
+                                    style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(color: PlannerVisual.mealInk(
+                                          meal['slot'] as String))),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      Text(
-                        recipe['name'],
-                        style: const TextStyle(fontSize: 19),
-                      ),
-                      if (meal['simple']) Text(t('simpleMeal')),
-                      Text(
-                        (recipe['ingredients'] as Map).entries
-                            .map(
-                              (e) =>
-                                  "${repo.catalog.foods[e.key]!['name']} ${RecipeSteps.grams(e.key as String, e.value * meal['portion'])}克",
-                            )
-                            .join('、'),
-                      ),
+                        const SizedBox(height: 8),
+                        Text(recipe['name'],
+                          style: Theme.of(context).textTheme.titleLarge
+                            ?.copyWith(color: PlannerVisual.ink)),
+                        if (meal['simple'])
+                          const Text('这是一顿简洁餐，照着做就行。'),
                       Text(
                         '本餐用油 ${RecipeSteps.grams('oil', ((recipe['ingredients']['oil'] ?? 0) as num) * meal['portion'])}克 · 食盐 ${RecipeSteps.grams('salt', ((recipe['ingredients']['salt'] ?? 0) as num) * meal['portion'])}克',
                         style: const TextStyle(
@@ -863,7 +1163,8 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                       plannerSurface(
                         'control-16208',
                         ExpansionTile(
-                          title: const Text('食材称量与详细做法'),
+                          leading: const Icon(Icons.menu_book_outlined),
+                          title: const Text('看做法和每样食材的重量'),
                           children: [
                             ...((recipe['ingredients'] as Map).entries.map((e) {
                               final food = repo.catalog.foods[e.key]!;
@@ -904,19 +1205,23 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                               ? '到这一天再记录'
                               : status != 'pending'
                               ? t('undo')
+                              : medicalBlocked
+                              ? '先查看健康风险提示'
                               : t('complete'),
-                          editable
+                          !futureDay && !busy &&
+                                  (status != 'pending' || !medicalBlocked)
                               ? () => record(
                                   meal,
                                   status != 'pending' ? 'pending' : 'completed',
                                 )
                               : null,
+                          primary: status == 'pending',
                         ),
                       ),
                       plannerSurface(
                         'more-${meal['slot']}',
                         ExpansionTile(
-                          title: const Text('换餐或其他记录'),
+                          title: const Text('吃的不一样？换菜或修改记录'),
                           children: [
                             Wrap(
                               spacing: 8,
@@ -1097,9 +1402,29 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                     ],
                   ),
                 ),
-              );
+              ),
+            );
             }),
+            const SizedBox(height: 14),
             Card(
+              color: Colors.white,
+              child: plannerSurface(
+                'nutrition-details',
+              ExpansionTile(
+                title: const Text('查看全天营养估算'),
+                children: [
+                  Text(
+                    '${t('planned')}: ${n['kcal'].round()} 千卡 · ${t('protein')} ${n['protein'].toStringAsFixed(1)} 克\n'
+                    '${t('sodium')} ${n['sodium'].round()} 毫克 · ${t('saltEquivalent')} ${(n['sodium'] * .0025).toStringAsFixed(1)} 克 · ${t('oil')} ${n['oil'].toStringAsFixed(1)} 克',
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                  Text(t('unknownNote')),
+                ],
+              ),
+            ),
+            ),
+            Card(
+              color: PlannerVisual.info,
               child: plannerSurface(
                 'control-24402',
                 ListTile(
@@ -1108,7 +1433,9 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                     style: const TextStyle(fontSize: 20),
                   ),
                   subtitle: Text(
-                    '${t(records['$date/review']?['status'] ?? 'pending')} · ${records['$date/review']?['notes'] ?? ''}',
+                    records['$date/review']?['status'] == 'completed'
+                        ? '${t('completed')} · ${records['$date/review']?['notes'] ?? ''}'
+                        : '还没有填写饮食回顾',
                   ),
                   onTap: editable
                       ? () async {
@@ -1118,28 +1445,31 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                           }
                         }
                       : null,
-                  trailing: plannerSurface(
+                  trailing: records['$date/review']?['status'] == 'completed'
+                      ? plannerSurface(
                     'control-25015',
                     IconButton(
                       tooltip: '撤销今日回顾',
                       icon: const Icon(Icons.undo),
-                      onPressed: editable
+                      onPressed: !futureDay && !busy
                           ? () => record(null, 'pending')
                           : null,
                     ),
-                  ),
+                  ) : null,
                 ),
               ),
             ),
             plannerButton(
               'weight',
-              t('weightHistory'),
+              '查看体重记录',
               () => Navigator.pushNamed(
                 context,
                 NavigationOptions.weightHistoryRoute,
               ),
+              primary: false,
             ),
           ],
+          ),
         ),
       ),
     );
@@ -1307,36 +1637,68 @@ class _PlannerSettingsState extends State<PlannerSettings> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  Text(t('reuseProfile')),
-                  const Text('选中不能吃的食材，其他选项可以保持默认。修改后点击底部保存。'),
+                  Card(
+                    color: PlannerVisual.info,
+                    child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Text(
+                        '只需选平时的吃饭习惯，其他保持默认就行。'
+                        '改完后点击下面的“保存饮食偏好”。',
+                        style: Theme.of(context).textTheme.bodyLarge
+                            ?.copyWith(color: PlannerVisual.infoInk),
+                      ),
+                    ),
+                  ),
                   if (message != null)
                     Semantics(liveRegion: true, child: Text(message!)),
-                  Text(t('avoid'), style: const TextStyle(fontSize: 20)),
-                  Wrap(
-                    spacing: 6,
-                    children: widget.repo.catalog.foods.values
-                        .where((f) => !['salt', 'oil'].contains(f['group']))
-                        .map(
-                          (f) => plannerSurface(
-                            'control-29339',
-                            FilterChip(
-                              label: Text(f['name']),
-                              selected: (prefs['avoid'] as List).contains(
-                                f['id'],
+                  const SizedBox(height: 10),
+                  Card(
+                    color: PlannerVisual.caution,
+                    child: ExpansionTile(
+                      leading: const Icon(Icons.no_food_outlined,
+                        color: PlannerVisual.cautionInk),
+                      title: const Text('哪些食物不能吃？'),
+                      subtitle: Text(
+                        (prefs['avoid'] as List).isEmpty
+                          ? '如有过敏或忌口，点这里选择'
+                          : '已排除 ${(prefs['avoid'] as List).length} 种食材 · 点开检查',
+                      ),
+                      initiallyExpanded: (prefs['avoid'] as List).isNotEmpty,
+                      childrenPadding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                      children: [
+                        const Text('勾选后，系统不会把这些食材加入新餐单。'),
+                      Wrap(
+                        spacing: 6,
+                        children: widget.repo.catalog.foods.values
+                            .where((f) => !['salt', 'oil'].contains(f['group']))
+                            .map(
+                              (f) => plannerSurface(
+                                'control-29339',
+                                FilterChip(
+                                  label: Text(f['name']),
+                                  selected: (prefs['avoid'] as List).contains(
+                                    f['id'],
+                                  ),
+                                  onSelected: (v) => setState(() {
+                                    if (v) {
+                                      prefs['avoid'].add(f['id']);
+                                    } else {
+                                      prefs['avoid'].remove(f['id']);
+                                    }
+                                  }),
+                                ),
                               ),
-                              onSelected: (v) => setState(() {
-                                if (v) {
-                                  prefs['avoid'].add(f['id']);
-                                } else {
-                                  prefs['avoid'].remove(f['id']);
-                                }
-                              }),
-                            ),
-                          ),
-                        )
-                        .toList(),
+                            )
+                            .toList(),
+                      ),
+    
+                      ],
+                    ),
                   ),
-                  Text(t('simpleSlot')),
+                  const SizedBox(height: 14),
+                  Text('哪一餐想做得更简单？',
+                    style: Theme.of(context).textTheme.titleLarge),
                   plannerSurface(
                     'control-29953',
                     SegmentedButton<String>(
@@ -1352,7 +1714,9 @@ class _PlannerSettingsState extends State<PlannerSettings> {
                           setState(() => prefs['simple_slot'] = v.first),
                     ),
                   ),
-                  plannerSurface(
+                  Card(
+                    color: PlannerVisual.info,
+                    child: plannerSurface(
                     'control-30385',
                     SwitchListTile(
                       title: Text(t('quick')),
@@ -1360,7 +1724,10 @@ class _PlannerSettingsState extends State<PlannerSettings> {
                       onChanged: (v) => setState(() => prefs['quick'] = v),
                     ),
                   ),
-                  plannerSurface(
+                  ),
+                  Card(
+                    color: PlannerVisual.lunch,
+                    child: plannerSurface(
                     'control-30592',
                     SwitchListTile(
                       title: Text(t('budget')),
@@ -1370,7 +1737,10 @@ class _PlannerSettingsState extends State<PlannerSettings> {
                       ),
                     ),
                   ),
-                  plannerSurface(
+                  ),
+                  Card(
+                    color: PlannerVisual.breakfast,
+                    child: plannerSurface(
                     'control-30879',
                     SwitchListTile(
                       title: Text(t('spicy')),
@@ -1379,6 +1749,7 @@ class _PlannerSettingsState extends State<PlannerSettings> {
                         () => prefs['taste'] = v ? 'spicy' : 'light',
                       ),
                     ),
+                  ),
                   ),
                   plannerSurface(
                     'advanced-settings',

@@ -144,7 +144,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('我的计划'), findsOneWidget);
       expect(find.text('今天吃什么'), findsOneWidget);
-      expect(find.text('今天吃什么'), findsOneWidget);
+      expect(find.textContaining('0/3餐有记录'), findsWidgets);
+      expect(find.bySemanticsIdentifier('planner-today-meal-breakfast'), findsOneWidget);
+      expect(find.bySemanticsIdentifier('planner-today-meal-lunch'), findsOneWidget);
+      expect(find.bySemanticsIdentifier('planner-today-meal-dinner'), findsOneWidget);
       expect(
         tester.getRect(find.bySemanticsIdentifier('planner-open-today')).bottom,
         lessThan(780),
@@ -170,7 +173,7 @@ void main() {
       });
       await tester.tap(find.bySemanticsIdentifier('planner-open-today'));
       await tester.pumpAndSettle();
-      expect(find.text('查看全天营养估算'), findsOneWidget);
+      expect(find.text('今天的三餐'), findsOneWidget);
       await tester.ensureVisible(find.text('按这份吃完了').first);
       await tester.runAsync(() async {
         await tester.tap(find.text('按这份吃完了').first);
@@ -179,6 +182,12 @@ void main() {
       await tester.pumpAndSettle();
       expect((await repo.intakes.getAllIntakesDBO()).length, 1);
       expect(find.textContaining('已记录，可在'), findsOneWidget);
+      final undo = find.bySemanticsIdentifier('planner-complete-breakfast');
+      expect(
+        find.descendant(of: undo, matching: find.byType(OutlinedButton)),
+        findsOneWidget,
+        reason: 'Undo must be a lower-emphasis action after completion',
+      );
       await tester.ensureVisible(find.text('撤销记录').first);
       await tester.runAsync(() async {
         await tester.tap(find.text('撤销记录').first);
@@ -195,6 +204,7 @@ void main() {
         reason:
             'Returning from daily weight edits refreshes the cached profile',
       );
+      expect(find.textContaining('0/3餐有记录'), findsWidgets);
       expect(tester.takeException(), null);
     },
   );
@@ -232,6 +242,8 @@ void main() {
       await tester.pumpWidget(app(PlannerDayPage(repo: repo, day: day)));
       await tester.pumpAndSettle();
       expect(find.text('到这一天再记录'), findsWidgets);
+      expect(find.text('这一天的三餐'), findsOneWidget);
+      expect(find.text('今天的三餐'), findsNothing);
       final button = tester.widget<FilledButton>(
         find.descendant(
           of: find.bySemanticsIdentifier('planner-complete-breakfast'),
@@ -330,6 +342,12 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 100));
       });
       await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('查看一周安排'), 210,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text('查看一周安排'));
+      await tester.pumpAndSettle();
       final dropdown = tester.widget<DropdownButton<String>>(
         find.byType(DropdownButton<String>),
       );
@@ -352,7 +370,7 @@ void main() {
       final more = find.bySemanticsIdentifier('planner-more-breakfast');
       await tester.ensureVisible(more);
       await tester.tap(
-        find.descendant(of: more, matching: find.text('换餐或其他记录')),
+        find.descendant(of: more, matching: find.text('吃的不一样？换菜或修改记录')),
       );
       await tester.pumpAndSettle();
       final portion = find.bySemanticsIdentifier('planner-portion-breakfast');
@@ -412,7 +430,10 @@ void main() {
         find.bySemanticsIdentifier('planner-save-settings'),
         findsOneWidget,
       );
+      await tester.tap(find.text('哪些食物不能吃？'));
+      await tester.pumpAndSettle();
       final chip = find.byType(FilterChip).first;
+      await tester.ensureVisible(chip);
       await tester.tap(chip);
       await tester.pumpAndSettle();
       await tester.tap(find.byType(BackButton));
@@ -487,4 +508,117 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+  testWidgets('three actual meal records make the optional reflection next step visible',
+      (tester) async {
+    final day = copyJson(repo.state['plans'][0]['plan']['days'][0]);
+    await tester.runAsync(() async {
+      for (final raw in day['meals']) {
+        await repo.record(day['date'], Map<String, dynamic>.from(raw), 'completed');
+      }
+    });
+    await tester.pumpWidget(app(PlannerDayPage(repo: repo, day: day)));
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsIdentifier('planner-quick-review'), findsOneWidget);
+    expect(find.textContaining('今天三餐都有记录了'), findsOneWidget);
+    expect(find.byTooltip('撤销今日回顾'), findsNothing);
+    await tester.runAsync(() async {
+      await tester.tap(find.bySemanticsIdentifier('planner-quick-review'));
+    });
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '今天胃口不错');
+    await tester.runAsync(() async {
+      await tester.tap(find.text('保存').last);
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+    });
+    await tester.pumpAndSettle();
+    expect(repo.state['records']["${day['date']}/review"]['status'], 'completed');
+    expect(repo.state['records']["${day['date']}/review"]['notes'], '今天胃口不错');
+    expect(find.byTooltip('撤销今日回顾'), findsOneWidget);
+    expect(tester.takeException(), null);
+  });
+
+  for (final scale in [1.0, 2.0]) {
+    for (final slot in ['lunch', 'dinner']) {
+      testWidgets('home $slot card focuses that meal at text scale $scale', (tester) async {
+        tester.view.physicalSize = const Size(360, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.runAsync(() async {
+          await tester.pumpWidget(app(const PlannerPage(), scale: scale));
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        });
+        await tester.pumpAndSettle();
+        final title = find.descendant(of: find.byType(AppBar),
+          matching: find.text('我的计划'));
+        expect(tester.renderObject<RenderParagraph>(title).didExceedMaxLines, isFalse);
+        final row = find.bySemanticsIdentifier('planner-today-meal-$slot');
+        await tester.ensureVisible(row);
+        await tester.pumpAndSettle();
+        await tester.tap(row);
+        await tester.pumpAndSettle();
+        final action = find.bySemanticsIdentifier('planner-complete-$slot');
+        expect(tester.getRect(action).overlaps(const Rect.fromLTWH(0, 56, 360, 744)), isTrue,
+          reason: 'Opening a meal must bring its action into the viewport');
+        expect(repo.state['records'], isEmpty);
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
+
+  testWidgets('weekly tools stay discoverable and open the grocery list', (tester) async {
+    await tester.runAsync(() async {
+      await tester.pumpWidget(app(const PlannerPage()));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsIdentifier('planner-week-select'), findsNothing);
+    await tester.scrollUntilVisible(find.text('查看一周安排'), 200);
+    expect(find.textContaining('0 / 21 餐已记录'), findsOneWidget);
+    expect(find.textContaining('不代表饮食或减重达标'), findsOneWidget);
+    await tester.tap(find.text('查看一周安排'));
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsIdentifier('planner-week-select'), findsOneWidget);
+    final grocery = find.bySemanticsIdentifier('planner-grocery-list');
+    await tester.ensureVisible(grocery);
+    await tester.pumpAndSettle();
+    await tester.tap(grocery);
+    await tester.pumpAndSettle();
+    expect(find.text('本周采购清单'), findsOneWidget);
+    expect(find.textContaining('不作为整周预算'), findsOneWidget);
+    await tester.tap(find.text('关闭'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('risk blocks new planned meals while keeping mistaken records reversible', (tester) async {
+    final day = copyJson(repo.state['plans'][0]['plan']['days'][0]);
+    await tester.runAsync(() async {
+      await repo.record(day['date'], Map<String, dynamic>.from(day['meals'][0]), 'completed');
+    });
+    final gated = PlannerRepository(repo.db, repo.intakes, repo.users,
+      repo.weights, repo.tracked, repo.service, enforceMedicalScreen: true);
+    await tester.runAsync(gated.initialize);
+    await tester.pumpWidget(app(PlannerDayPage(repo: gated, day: day, initialSlot: 'lunch')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('请先完成健康风险核对'), findsOneWidget);
+    final undo = find.bySemanticsIdentifier('planner-complete-breakfast');
+    expect(tester.widget<OutlinedButton>(find.descendant(of: undo,
+      matching: find.byType(OutlinedButton))).onPressed, isNotNull);
+    final lunch = find.bySemanticsIdentifier('planner-complete-lunch');
+    expect(tester.widget<FilledButton>(find.descendant(of: lunch,
+      matching: find.byType(FilledButton))).onPressed, isNull);
+    await tester.ensureVisible(undo);
+    await tester.pumpAndSettle();
+    await tester.runAsync(() async {
+      await tester.tap(undo);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+    await tester.pumpAndSettle();
+    expect(await repo.intakes.getAllIntakesDBO(), isEmpty);
+    expect(gated.state['records']["${day['date']}/breakfast"]['status'], 'pending');
+    expect(gated.medicalSafetyIssue, isNotNull);
+    expect(tester.takeException(), isNull);
+  });
+
 }

@@ -293,7 +293,8 @@ class _OpenNutriTrackerAppState extends State<OpenNutriTrackerApp>
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(lightPalette),
       darkTheme: buildAppTheme(darkPalette),
-      themeMode: Provider.of<ThemeModeProvider>(context).themeMode,
+      // Senior-facing edition: never follow a dark OS preference.
+      themeMode: ThemeMode.light,
       locale: const Locale('zh'),
       localizationsDelegates: const [
         S.delegate,

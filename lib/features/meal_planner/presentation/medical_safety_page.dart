@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../data/planner_repository.dart';
 import '../domain/medical_safety_screen.dart';
 import '../domain/planner.dart';
+import 'planner_visual.dart';
 
 /// A short self-report, not a clinical diagnosis or clearance document.
 class MedicalSafetyPage extends StatefulWidget {
@@ -47,28 +48,59 @@ class _MedicalSafetyPageState extends State<MedicalSafetyPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) {
+    final confirmed = answers.values.where((v) => v != 'unknown').length;
+    return Scaffold(
+    backgroundColor: PlannerVisual.background,
     appBar: AppBar(title: const Text('健康风险核对')),
     body: ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Text('为高血压或肥胖家人使用前请逐项确认',
-          style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 10),
-        const Text(
-          '仅用于判断是否适合本 APP 的普通减重参考餐单，不是医生诊断。'
-          '任何一项“有”或“不确定”，请先找医生或临床营养师核实；'
-          '历史记录会保留。',
+        Card(
+          color: PlannerVisual.info,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('先确认这 7 件事',
+                  style: Theme.of(context).textTheme.titleLarge
+                      ?.copyWith(color: PlannerVisual.infoInk)),
+                const SizedBox(height: 6),
+                Text('已明确 $confirmed / 7 项 · 不清楚就保留“不确定”',
+                  style: Theme.of(context).textTheme.bodyMedium
+                      ?.copyWith(color: PlannerVisual.infoInk)),
+                const SizedBox(height: 10),
+                LinearProgressIndicator(
+                  value: confirmed / MedicalSafetyScreen.labels.length,
+                  color: PlannerVisual.infoInk,
+                  backgroundColor: Colors.white,
+                ),
+                const SizedBox(height: 8),
+                Text('若有疾病风险或还不清楚，先向医生确认，不能直接生成减重菜谱。',
+                  style: Theme.of(context).textTheme.bodyMedium
+                      ?.copyWith(color: PlannerVisual.infoInk)),
+              ],
+            ),
+          ),
         ),
         const SizedBox(height: 14),
         for (final entry in MedicalSafetyScreen.labels.entries) ...[
           Card(
+            color: ['blood_pressure_uncontrolled', 'kidney_disease',
+                    'potassium_medication_risk'].contains(entry.key)
+                ? PlannerVisual.caution : Colors.white,
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(entry.value, style: const TextStyle(fontSize: 17)),
+                  Text(
+                    '${MedicalSafetyScreen.labels.keys.toList().indexOf(entry.key) + 1}. ${entry.value}',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: PlannerVisual.ink,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Semantics(
                     identifier: "planner-risk-${entry.key.replaceAll('_', '-')}",
@@ -92,10 +124,27 @@ class _MedicalSafetyPageState extends State<MedicalSafetyPage> {
         if (feedback != null)
           Semantics(
             liveRegion: true,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(feedback!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            child: Card(
+              color: PlannerVisual.caution,
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('需要先向医生或营养师确认',
+                      style: Theme.of(context).textTheme.titleMedium
+                          ?.copyWith(color: PlannerVisual.cautionInk)),
+                    Text(feedback!,
+                      style: Theme.of(context).textTheme.bodyMedium
+                          ?.copyWith(color: PlannerVisual.cautionInk)),
+                    TextButton.icon(
+                      onPressed: () => Navigator.pop(context, false),
+                      icon: const Icon(Icons.arrow_back),
+                      label: const Text('返回我的计划'),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         Semantics(
@@ -116,4 +165,5 @@ class _MedicalSafetyPageState extends State<MedicalSafetyPage> {
       ],
     ),
   );
+  }
 }

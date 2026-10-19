@@ -150,7 +150,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         height:
-            78 + (MediaQuery.textScalerOf(context).scale(14) - 14).clamp(0, 60),
+            78 + 2 * (MediaQuery.textScalerOf(context).scale(14) - 14).clamp(0, 60),
         padding: EdgeInsets.zero,
         shape: const AutomaticNotchedShape(RoundedRectangleBorder()),
         notchMargin: 8,
@@ -249,9 +249,18 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selected = index == selectedIndex;
-    final color = selected
-        ? Theme.of(context).colorScheme.primary
-        : palette.textMuted;
+    // Each destination retains its own visual identity on the fixed light canvas.
+    const accents = [
+      Color(0xFF155C3C), // My plan — green
+      Color(0xFF25518C), // Diary — blue
+      Color(0xFF453E93), // Profile — violet
+    ];
+    const lightFills = [
+      Color(0xFFE3F3E9),
+      Color(0xFFE6F0FF),
+      Color(0xFFECEBFF),
+    ];
+    final color = selected ? accents[index] : palette.textMuted;
     return Expanded(
       child: Semantics(
         identifier: id,
@@ -263,8 +272,18 @@ class _NavItem extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(selected ? selectedIcon : icon, color: color, size: 26),
-                const SizedBox(height: 3),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  decoration: BoxDecoration(
+                    color: selected ? lightFills[index] : Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 18, vertical: 6),
+                  child: Icon(selected ? selectedIcon : icon,
+                      color: color, size: 27),
+                ),
+                const SizedBox(height: 2),
                 Text(
                   label,
                   style: Theme.of(
