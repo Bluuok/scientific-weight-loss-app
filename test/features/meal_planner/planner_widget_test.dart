@@ -505,4 +505,29 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+  testWidgets('three actual meal records make the optional reflection next step visible',
+      (tester) async {
+    final day = copyJson(repo.state['plans'][0]['plan']['days'][0]);
+    await tester.runAsync(() async {
+      for (final raw in day['meals']) {
+        await repo.record(day['date'], Map<String, dynamic>.from(raw), 'completed');
+      }
+    });
+    await tester.pumpWidget(app(PlannerDayPage(repo: repo, day: day)));
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsIdentifier('planner-quick-review'), findsOneWidget);
+    expect(find.textContaining('今天三餐都有记录了'), findsOneWidget);
+    await tester.tap(find.bySemanticsIdentifier('planner-quick-review'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.bySemanticsIdentifier('planner-edit-input'), '今天胃口不错');
+    await tester.runAsync(() async {
+      await tester.tap(find.text('保存').last);
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+    });
+    await tester.pumpAndSettle();
+    expect(repo.state['records']["${day['date']}/review"]['status'], 'completed');
+    expect(repo.state['records']["${day['date']}/review"]['notes'], '今天胃口不错');
+    expect(tester.takeException(), null);
+  });
+
 }
