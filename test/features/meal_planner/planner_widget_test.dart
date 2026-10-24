@@ -16,9 +16,11 @@ import 'package:opennutritracker/core/utils/locator.dart';
 import 'package:opennutritracker/generated/l10n.dart';
 import 'package:opennutritracker/hive_registrar.g.dart';
 import 'package:opennutritracker/features/meal_planner/domain/planner.dart';
+import 'package:opennutritracker/features/meal_planner/domain/recipe_steps.dart';
 import 'package:opennutritracker/features/meal_planner/data/planner_repository.dart';
 import 'package:opennutritracker/features/meal_planner/data/meal_planning_service.dart';
 import 'package:opennutritracker/features/meal_planner/presentation/planner_page.dart';
+import 'package:opennutritracker/features/meal_planner/presentation/planner_recipe_page.dart';
 import 'planner_persistence_test.dart'
     show TestDB, TestUser, TestWeights, TestTracked, OfflineCredentials;
 
@@ -208,6 +210,51 @@ void main() {
       expect(tester.takeException(), null);
     },
   );
+  for (final scale in [1.0, 2.0]) {
+    testWidgets('recipe details preserve weights and return to records at scale $scale', (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final day = copyJson(repo.state['plans'][0]['plan']['days'][0]);
+      await tester.pumpWidget(app(PlannerDayPage(repo: repo, day: day), scale: scale));
+      await tester.pumpAndSettle();
+      final open = find.bySemanticsIdentifier('planner-recipe-breakfast');
+      await tester.ensureVisible(open);
+      await tester.pumpAndSettle();
+      await tester.tap(open);
+      await tester.pumpAndSettle();
+      expect(find.byType(PlannerRecipePage), findsOneWidget);
+      expect(tester.getRect(find.bySemanticsIdentifier('planner-recipe-return')).bottom,
+          lessThanOrEqualTo(800));
+      final meal = day['meals'][0];
+      final recipe = repo.catalog.recipes[meal['recipe_id']]!;
+      final ingredient = (recipe['ingredients'] as Map).entries.first;
+      final state = repo.catalog.foods[ingredient.key]!['state'];
+      final grams = RecipeSteps.grams(ingredient.key as String,
+          (ingredient.value as num) * meal['portion']);
+      final ingredientLabel = find.text('$grams 克（$state）');
+      await tester.scrollUntilVisible(ingredientLabel, 200);
+      expect(ingredientLabel, findsOneWidget);
+      await tester.scrollUntilVisible(find.text('再照着做'), 300);
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.bySemanticsIdentifier('planner-recipe-return'));
+      await tester.pumpAndSettle();
+      expect(find.byType(PlannerRecipePage), findsNothing);
+      expect(find.bySemanticsIdentifier('planner-complete-breakfast'), findsOneWidget);
+      expect(repo.state['records'], isEmpty);
+      await tester.ensureVisible(open);
+      await tester.pumpAndSettle();
+      await tester.tap(open);
+      await tester.pumpAndSettle();
+      expect(find.byType(PlannerRecipePage), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.byType(PlannerRecipePage), findsNothing);
+      expect(repo.state['records'], isEmpty);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets(
     'failed completion is visible without scrolling and leaves no intake',
     (tester) async {
