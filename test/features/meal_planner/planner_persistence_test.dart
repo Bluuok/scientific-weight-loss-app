@@ -119,6 +119,38 @@ void main() {
     await Hive.close();
     await dir.delete(recursive: true);
   });
+  test('real weekly plans adapt only after satiety reports and persist locally',
+      () async {
+    final start = nextDay(localDay(DateTime.now()), -14);
+    final first = await repo.generate(start);
+    final initial = (first['target_kcal'] as num).toDouble();
+    expect(first['gradual_energy_stage']['level'], 1);
+    expect(initial, greaterThan(1800));
+    for (var i = 0; i < 3; i++) {
+      await repo.saveSatiety(nextDay(start, i), 'comfortable');
+    }
+    final second = await repo.generate(nextDay(start, 7));
+    expect(second['gradual_energy_stage']['level'], 2);
+    expect((second['target_kcal'] as num).toDouble(), lessThan(initial));
+    await Hive.close();
+    await open();
+    expect(repo.satietyReports[nextDay(start, 0)], 'comfortable');
+    expect(repo.state['plans'].length, 2);
+    // A symptom report should never cause a deeper third-week cut.
+    await repo.saveSatiety(nextDay(start, 9), 'too_hungry');
+    final proposed = await repo.rules(planningStart: nextDay(start, 14));
+    final secondGoal = (second['target_kcal'] as num).toDouble();
+    expect(proposed.targetKcal, greaterThan(secondGoal));
+    final third = await repo.generate(nextDay(start, 14));
+    expect(third['gradual_energy_stage']['level'], 1);
+    expect(first['plan'], isNotNull);
+    expect(repo.state['plans'][0]['target_kcal'], initial);
+    await expectLater(
+      repo.saveSatiety(nextDay(localDay(DateTime.now()), 1), 'comfortable'),
+      throwsA(isA<PlanRejected>()),
+    );
+  });
+
   test('local price entries persist across encrypted Hive restart', () async {
     final today = localDay(DateTime.now());
     final revision = await repo.generate(today);
