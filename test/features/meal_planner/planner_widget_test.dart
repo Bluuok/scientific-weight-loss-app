@@ -16,6 +16,7 @@ import 'package:opennutritracker/core/utils/locator.dart';
 import 'package:opennutritracker/generated/l10n.dart';
 import 'package:opennutritracker/hive_registrar.g.dart';
 import 'package:opennutritracker/features/meal_planner/domain/planner.dart';
+import 'package:opennutritracker/features/meal_planner/domain/recipe_steps.dart';
 import 'package:opennutritracker/features/meal_planner/data/planner_repository.dart';
 import 'package:opennutritracker/features/meal_planner/data/meal_planning_service.dart';
 import 'package:opennutritracker/features/meal_planner/presentation/planner_page.dart';
@@ -229,8 +230,11 @@ void main() {
       final recipe = repo.catalog.recipes[meal['recipe_id']]!;
       final ingredient = (recipe['ingredients'] as Map).entries.first;
       final state = repo.catalog.foods[ingredient.key]!['state'];
-      await tester.scrollUntilVisible(find.textContaining('克（$state）').first, 200);
-      expect(find.textContaining('克（$state）'), findsWidgets);
+      final grams = RecipeSteps.grams(ingredient.key as String,
+          (ingredient.value as num) * meal['portion']);
+      final ingredientLabel = find.text('$grams 克（$state）');
+      await tester.scrollUntilVisible(ingredientLabel, 200);
+      expect(ingredientLabel, findsOneWidget);
       await tester.scrollUntilVisible(find.text('再照着做'), 300);
       expect(tester.takeException(), isNull);
       await tester.tap(find.bySemanticsIdentifier('planner-recipe-return'));
