@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 typedef Json = Map<String, dynamic>;
 
@@ -115,6 +116,8 @@ class PlanRules {
   final List<String> avoid;
   final String simpleSlot;
   final String budget;
+  final double? calorieCeiling;
+  final double minimumRatio;
   PlanRules(
     this.catalog, {
     required this.targetKcal,
@@ -122,10 +125,12 @@ class PlanRules {
     this.avoid = const [],
     this.simpleSlot = 'lunch',
     this.budget = 'normal',
+    this.calorieCeiling,
+    this.minimumRatio = .9,
   });
 
-  double get minimumKcal => targetKcal * .9 < 1800 ? 1800 : targetKcal * .9;
-  double get maximumKcal => targetKcal * 1.1;
+  double get minimumKcal => math.max(1800, targetKcal * minimumRatio);
+  double get maximumKcal => math.min(targetKcal * 1.1, calorieCeiling ?? double.infinity);
   double get planningKcal => (minimumKcal + maximumKcal) / 2;
 
   void _keys(Json object, Set<String> required) {
@@ -143,6 +148,7 @@ class PlanRules {
     if (!targetKcal.isFinite ||
         targetKcal < 1800 ||
         targetKcal > 3200 ||
+        maximumKcal < minimumKcal ||
         !minimumProtein.isFinite ||
         minimumProtein < 60 ||
         minimumProtein > 120) {
