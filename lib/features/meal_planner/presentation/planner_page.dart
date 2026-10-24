@@ -14,6 +14,7 @@ import 'planner_text.dart';
 import 'grocery_budget_dialog.dart';
 import 'medical_safety_page.dart';
 import 'planner_visual.dart';
+import 'planner_recipe_page.dart';
 
 Widget plannerSurface(String id, Widget child) =>
     Semantics(identifier: 'planner-$id', child: child);
@@ -145,7 +146,7 @@ class _PlannerPageState extends State<PlannerPage> {
       }
       if (!await _confirm(
         t('reference'),
-        '${t('target')}: ${rules.targetKcal.round()} 千卡 / ${t('protein')}: ≥${rules.minimumProtein.round()} 克\n'
+        '每天计划约 ${rules.targetKcal.round()} 千卡（食物提供的能量），\n蛋白质不少于 ${rules.minimumProtein.round()} 克（帮助维护肌肉）\n'
         '${t('limits')}\n${previous == null ? t('generateNote') : t('adjustNote')}',
       )) {
         return;
@@ -1160,38 +1161,20 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      plannerSurface(
-                        'control-16208',
-                        ExpansionTile(
-                          leading: const Icon(Icons.menu_book_outlined),
-                          title: const Text('看做法和每样食材的重量'),
-                          children: [
-                            ...((recipe['ingredients'] as Map).entries.map((e) {
-                              final food = repo.catalog.foods[e.key]!;
-                              return plannerSurface(
-                                'control-16497',
-                                ListTile(
-                                  title: Text(
-                                    '${food['name']} ${RecipeSteps.grams(e.key as String, e.value * meal['portion'])} 克（${food['state']}）',
-                                  ),
-                                ),
-                              );
-                            })),
-                            Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: Text(
-                                RecipeSteps.instructions(
-                                  repo.catalog,
-                                  meal['recipe_id'],
-                                  (meal['portion'] as num).toDouble(),
-                                ),
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  height: 1.5,
-                                ),
-                              ),
+                      const SizedBox(height: 8),
+                      plannerSecondaryButton(
+                        'recipe-${meal['slot']}',
+                        '打开食材和做法',
+                        () => Navigator.push<void>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PlannerRecipePage(
+                              catalog: repo.catalog,
+                              recipeId: meal['recipe_id'] as String,
+                              portion: (meal['portion'] as num).toDouble(),
+                              mealName: t(meal['slot']),
                             ),
-                          ],
+                          ),
                         ),
                       ),
                       if (note != '') Text(note),
@@ -1411,7 +1394,7 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
               child: plannerSurface(
                 'nutrition-details',
               ExpansionTile(
-                title: const Text('查看全天营养估算'),
+                title: const Text('查看今天的营养说明（可选）'),
                 children: [
                   Text(
                     '${t('planned')}: ${n['kcal'].round()} 千卡 · ${t('protein')} ${n['protein'].toStringAsFixed(1)} 克\n'
@@ -1419,6 +1402,7 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                     style: const TextStyle(fontSize: 18),
                   ),
                   Text(t('unknownNote')),
+                  const Text('钠是食物中的一种盐分；这里的数值是估算，不是验血结果。'),
                 ],
               ),
             ),
