@@ -668,4 +668,43 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+
+  testWidgets('satiety feedback distinguishes recorded meals from skipped meals at large text', (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final day = copyJson(repo.state['plans'][0]['plan']['days'][0]);
+    await tester.runAsync(() async {
+      await repo.record(day['date'], Map<String, dynamic>.from(day['meals'][0]), 'skipped');
+    });
+    await tester.pumpWidget(app(PlannerDayPage(repo: repo, day: day), scale: 2));
+    await tester.pumpAndSettle();
+    final comfortable = find.descendant(
+      of: find.bySemanticsIdentifier('planner-satiety-comfortable'),
+      matching: find.byType(ChoiceChip));
+    expect(tester.widget<ChoiceChip>(comfortable).onSelected, isNull);
+    final symptoms = find.bySemanticsIdentifier('planner-satiety-too-hungry');
+    await tester.ensureVisible(symptoms);
+    await tester.pumpAndSettle();
+    await tester.runAsync(() async {
+      await tester.tap(symptoms);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+    await tester.pumpAndSettle();
+    expect(repo.satietyReports[day['date']], 'too_hungry');
+    expect(find.textContaining('联系医生检查原因'), findsOneWidget);
+    final clear = find.bySemanticsIdentifier('planner-clear-satiety');
+    await tester.ensureVisible(clear);
+    await tester.pumpAndSettle();
+    await tester.runAsync(() async {
+      await tester.tap(clear);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+    await tester.pumpAndSettle();
+    expect(repo.satietyReports[day['date']], isNull);
+    expect(find.bySemanticsIdentifier('planner-clear-satiety'), findsNothing);
+    expect(await repo.intakes.getAllIntakesDBO(), isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
 }

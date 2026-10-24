@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce/hive.dart';
@@ -92,4 +93,28 @@ void main() {
       },
     );
   }
+  test('undoing the evidence while generating rejects a stale deeper target', () async {
+    final today = localDay(DateTime.now());
+    final start = nextDay(today, -7);
+    final plan = (await repo.rules(planningStart: start)).fallback(start);
+    final initial = repo.state;
+    initial['plans'] = [{'id': 'seed', 'plan': plan}];
+    await db.plans.put('state', jsonEncode(initial));
+    for (var i = 0; i < 3; i++) {
+      for (final meal in plan['days'][i]['meals']) {
+        await repo.record(nextDay(start, i), Map<String, dynamic>.from(meal), 'completed');
+      }
+      await repo.saveSatiety(nextDay(start, i), 'comfortable');
+    }
+    expect(repo.gradualStage(today)['level'], 2);
+    final request = repo.generate(today);
+    await service.started.future;
+    await repo.record(start, Map<String, dynamic>.from(plan['days'][0]['meals'][0]), 'pending');
+    expect(repo.gradualStage(today)['level'], 1);
+    service.finish.complete(service.answer);
+    await expectLater(request, throwsA(isA<PlanRejected>()));
+    expect(repo.state['plans'].length, 1);
+    expect((await repo.intakes.getAllIntakesDBO()).length, 8);
+  });
+
 }
