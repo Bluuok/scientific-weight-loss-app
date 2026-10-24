@@ -117,6 +117,7 @@ class PlanRules {
   final String simpleSlot;
   final String budget;
   final double? calorieCeiling;
+  final double? calorieFloor;
   final double minimumRatio;
   PlanRules(
     this.catalog, {
@@ -126,10 +127,12 @@ class PlanRules {
     this.simpleSlot = 'lunch',
     this.budget = 'normal',
     this.calorieCeiling,
+    this.calorieFloor,
     this.minimumRatio = .9,
   });
 
-  double get minimumKcal => math.max(1800.0, targetKcal * minimumRatio);
+  double get minimumKcal => math.max(1800.0,
+      math.max(targetKcal * minimumRatio, calorieFloor ?? 0));
   double get maximumKcal => math.min(targetKcal * 1.1, calorieCeiling ?? double.infinity);
   double get planningKcal => (minimumKcal + maximumKcal) / 2;
 

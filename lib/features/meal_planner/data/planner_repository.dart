@@ -109,7 +109,8 @@ class PlannerRepository {
 
   /// Plans already saved remain immutable; satiety only influences NEW weeks.
   Json gradualStage(String start) {
-    final existing = (state['plans'] as List)
+    final snapshot = state;
+    final existing = (snapshot['plans'] as List)
         .map((row) => row['plan']['period_start'] as String)
         .toList()..sort();
     final first = existing.isEmpty || start.compareTo(existing.first) < 0
@@ -117,9 +118,13 @@ class PlannerRepository {
     return GradualEnergyPolicy.stage(
       programStart: first,
       weekStart: start,
-      reports: Map<String, dynamic>.from(
-        state['satiety_reports'] ?? const <String, dynamic>{},
-      ),
+      asOfDate: localDay(now()),
+      reports: {
+        for (final entry in (snapshot['satiety_reports'] as Map? ?? {}).entries)
+          if (entry.value != 'comfortable' ||
+              _threeRecordedMeals(entry.key as String, snapshot['records'] as Map))
+            entry.key: entry.value,
+      },
     );
   }
 
@@ -127,9 +132,25 @@ class PlannerRepository {
     state['satiety_reports'] ?? const <String, dynamic>{},
   );
 
-  Future<void> saveSatiety(String date, String value) =>
-      _lock.synchronized(() async {
-        if (!GradualEnergyPolicy.responses.containsKey(value) ||
+  bool hasThreeRecordedMeals(String date) =>
+      _threeRecordedMeals(date, state['records'] as Map);
+
+  static bool _threeRecordedMeals(String date, Map records) =>
+      ['breakfast', 'lunch', 'dinner'].every((slot) {
+        final record = records['$date/$slot'];
+        return record?['status'] == 'completed' ||
+            (record?['status'] == 'replaced' &&
+                (record?['actual_portion'] != null ||
+                    (record?['external_intake_ids'] as List? ?? []).isNotEmpty));
+      });
+
+  Future<void> saveSatiety(String date, String? value) {
+    final profileId = db.activeProfileId;
+    return _lock.synchronized(() async {
+        if (db.activeProfileId != profileId) {
+          throw const PlanRejected('家人资料已切换，请重新打开当天计划。');
+        }
+        if ((value != null && !GradualEnergyPolicy.responses.containsKey(value)) ||
             !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(date) ||
             date.compareTo(localDay(now())) > 0 ||
             !(state['plans'] as List).any((revision) =>
@@ -137,19 +158,29 @@ class PlannerRepository {
                     .any((day) => day['date'] == date))) {
           throw const PlanRejected('请从已有计划的当天记录饱腹感');
         }
+        if (value == 'comfortable' && !hasThreeRecordedMeals(date)) {
+          throw const PlanRejected('先如实记录当天三餐，再确认一整天吃得饱；饥饿或不适可随时反馈。');
+        }
         final s = state;
         final reports = Map<String, dynamic>.from(
           s['satiety_reports'] ?? const <String, dynamic>{},
         );
-        reports[date] = value;
+        if (value == null) {
+          reports.remove(date);
+        } else {
+          reports[date] = value;
+        }
         s['satiety_reports'] = reports;
         await _save(s);
       });
+  }
 
   Future<PlanRules> rules({
     String? simpleSlot,
     String? planningStart,
     double? preservedTargetKcal,
+    double? preservedMinimumKcal,
+    double? preservedMaximumKcal,
   }) async {
     if (enforceMedicalScreen) {
       final issue = medicalSafetyIssue;
@@ -159,17 +190,15 @@ class PlannerRepository {
     final issue = weightLossIssue(user);
     if (issue != null) throw PlanRejected(issue);
     final maintenance = TDEECalc.getTDEEKcalIOM2005(user);
-    // Callers unrelated to newly generated weekly plans retain the old
-    // eligibility check; a saved week keeps its original energy contract.
-    final phase = planningStart == null ? null : gradualStage(planningStart);
+    final phase = gradualStage(planningStart ?? localDay(now()));
+    final legacyContract = preservedTargetKcal != null &&
+        preservedMinimumKcal == null && preservedMaximumKcal == null;
     final target = preservedTargetKcal ??
-        (phase == null
-            ? math.max(1800.0, maintenance * .90)
-            : GradualEnergyPolicy.calorieTarget(maintenance, phase));
+        GradualEnergyPolicy.calorieTarget(maintenance, phase);
     // No forced weight-loss plan if this catalogue's floor cannot safely fit.
     if (!maintenance.isFinite || maintenance <= 1800 ||
         target >= maintenance ||
-        (phase == null && target * 1.1 >= maintenance)) {
+        (legacyContract && target * 1.1 >= maintenance)) {
       throw const PlanRejected('当前估算能量与本餐单模板不匹配，需要营养师个体评估，暂不自动生成减重餐单。');
     }
     final prefs = state['preferences'];
@@ -183,9 +212,12 @@ class PlannerRepository {
       avoid: List<String>.from(prefs['avoid']),
       simpleSlot: simpleSlot ?? prefs['simple_slot'],
       budget: prefs['budget'] == 'economy' ? 'economy' : 'normal',
-      calorieCeiling: phase == null || preservedTargetKcal != null
-          ? null : maintenance,
-      minimumRatio: phase == null || preservedTargetKcal != null ? .9 : .97,
+      calorieCeiling: legacyContract ? null :
+          math.min(preservedMaximumKcal ?? maintenance, maintenance),
+      calorieFloor: legacyContract ? null : math.max(
+          preservedMinimumKcal ?? 1800.0, maintenance - 350.0),
+      minimumRatio: preservedMinimumKcal != null
+          ? preservedMinimumKcal / target : legacyContract ? .9 : .97,
     );
   }
 
@@ -250,7 +282,21 @@ class PlannerRepository {
     );
   }
 
-  Future<Json> monthlyDirection(String weekStart) async {
+  Future<PlanRules> rulesForDate(String date, {String? simpleSlot}) async {
+    final matching = (state['plans'] as List).where((row) =>
+        date.compareTo(row['plan']['period_start']) >= 0 &&
+        date.compareTo(nextDay(row['plan']['period_start'], 6)) <= 0);
+    final previous = matching.isEmpty ? null : matching.last;
+    return rules(
+      simpleSlot: simpleSlot,
+      planningStart: previous?['plan']['period_start'] as String? ?? date,
+      preservedTargetKcal: (previous?['target_kcal'] as num?)?.toDouble(),
+      preservedMinimumKcal: (previous?['minimum_kcal'] as num?)?.toDouble(),
+      preservedMaximumKcal: (previous?['maximum_kcal'] as num?)?.toDouble(),
+    );
+  }
+
+  Future<Json> monthlyDirection(String weekStart, {PlanRules? planRules}) async {
     final s = state;
     final starts =
         (s['plans'] as List)
@@ -258,7 +304,7 @@ class PlannerRepository {
             .toList()
           ..sort();
     final user = await users.getUserData();
-    final rule = await rules(planningStart: weekStart);
+    final rule = planRules ?? await rulesForDate(weekStart);
     final measurements = (await weights.getAllEntries())
         .map(
           (w) => <String, dynamic>{'date': localDay(w.date), 'kg': w.weightKg},
@@ -375,12 +421,20 @@ class PlannerRepository {
       simpleSlot: previousSlot,
       planningStart: start,
       preservedTargetKcal: (previous?['target_kcal'] as num?)?.toDouble(),
+      preservedMinimumKcal: (previous?['minimum_kcal'] as num?)?.toDouble(),
+      preservedMaximumKcal: (previous?['maximum_kcal'] as num?)?.toDouble(),
     );
     final user = await users.getUserData();
     final s = state;
     final originProfileId = db.activeProfileId;
     final preferencesStamp = jsonEncode(s['preferences']);
     final satietyStamp = jsonEncode(s['satiety_reports']);
+    final stageStamp = jsonEncode(gradualStage(start));
+    final energyStage = previous == null ? gradualStage(start) :
+        previous['gradual_energy_stage'] ?? <String, dynamic>{
+          'version': 'legacy-saved-target',
+          'explanation': '沿用已保存计划的能量目标，不自动改写历史安排。',
+        };
     final medicalStamp = jsonEncode(s['medical_screen']);
     String profileStamp(UserEntity user) => jsonEncode([
       user.birthday.toIso8601String(),
@@ -429,8 +483,8 @@ class PlannerRepository {
           'activity_level': user.pal.name,
           'medical_nutrition_restrictions': 'unknown',
         },
-        'monthly_direction': await monthlyDirection(start),
-        'gradual_energy_stage': gradualStage(start),
+        'monthly_direction': await monthlyDirection(start, planRules: rule),
+        'gradual_energy_stage': energyStage,
         'cycle_execution_review': cycleReview(localDay(now())),
         'reference_material': referenceMaterial,
         'references_status': referenceMaterial.isEmpty
@@ -486,7 +540,8 @@ class PlannerRepository {
           );
         }
       }
-      if (jsonEncode(latest['satiety_reports']) != satietyStamp) {
+      if (jsonEncode(latest['satiety_reports']) != satietyStamp ||
+          (previous == null && jsonEncode(gradualStage(start)) != stageStamp)) {
         throw const PlanRejected('生成过程中饱腹感记录已改变，请重新生成避免使用旧目标。');
       }
       if (jsonEncode(latest['preferences']) != preferencesStamp) {
@@ -551,9 +606,11 @@ class PlannerRepository {
         'validation_version': PlanRules.version,
         'reason': reason,
         'preferences': latest['preferences'],
-        'monthly_direction': await monthlyDirection(start),
+        'monthly_direction': await monthlyDirection(start, planRules: rule),
         'target_kcal': rule.targetKcal,
-        'gradual_energy_stage': gradualStage(start),
+        'minimum_kcal': rule.minimumKcal,
+        'maximum_kcal': rule.maximumKcal,
+        'gradual_energy_stage': energyStage,
       };
       plans.add(revision);
       await _save(latest);
@@ -580,7 +637,7 @@ class PlannerRepository {
       throw const PlanRejected('Invalid actual portion');
     }
     if (meal != null && (status == 'completed' || actualPortion != null)) {
-      await rules(); // Check before persisting or writing any intake.
+      await rulesForDate(date); // Check before persisting or writing any intake.
       if (!catalog.allowed(
         meal['recipe_id'],
         List<String>.from(state['preferences']['avoid']),
@@ -649,7 +706,7 @@ class PlannerRepository {
                 (m) => m['simple'] == true,
               )['slot']
               as String;
-    final rule = await rules(simpleSlot: oldSlot);
+    final rule = await rulesForDate(date, simpleSlot: oldSlot);
     if (await diarySlotRecorded(date, slot)) {
       throw const PlanRejected('饮食日记已有这餐的实际记录，请保留已吃餐次。');
     }
@@ -772,7 +829,7 @@ class PlannerRepository {
         .map(IntakeEntity.fromIntakeDBO)
         .toList();
     if (!await tracked.hasTrackedDay(date)) {
-      final rule = await rules();
+      final rule = await rulesForDate(localDay(date));
       await tracked.addNewTrackedDay(
         date,
         rule.targetKcal,

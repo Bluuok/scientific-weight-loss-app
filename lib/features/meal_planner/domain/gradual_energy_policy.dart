@@ -22,6 +22,7 @@ class GradualEnergyPolicy {
     required String programStart,
     required String weekStart,
     required Map<String, dynamic> reports,
+    String? asOfDate,
   }) {
     final elapsed = math.max(0, _dayOffset(programStart, weekStart));
     final previousWeeks = elapsed ~/ 7;
@@ -34,6 +35,7 @@ class GradualEnergyPolicy {
       for (final entry in reports.entries) {
         if (entry.key.compareTo(start) >= 0 &&
             entry.key.compareTo(end) <= 0 &&
+            entry.key.compareTo(asOfDate ?? weekStart) <= 0 &&
             responses.containsKey(entry.value)) {
           values.add(entry.value as String);
         }
@@ -43,6 +45,8 @@ class GradualEnergyPolicy {
         lastReason = '近期报告过明显饥饿或不适：不再增加节食强度，建议评估原因。';
       } else if (values.contains('hungry')) {
         lastReason = '上一阶段还有饥饿感：继续现有温和水平，不加大限制。';
+      } else if (end.compareTo(asOfDate ?? weekStart) >= 0) {
+        lastReason = '这一周尚未完整结束：保持现有水平，不提前加大限制。';
       } else if (values.length >= 3 &&
           values.every((value) => value == 'comfortable')) {
         level = math.min(2, level + 1);

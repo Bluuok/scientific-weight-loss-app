@@ -143,6 +143,8 @@ class _PlannerPageState extends State<PlannerPage> {
       final rules = await repo.rules(
         planningStart: start,
         preservedTargetKcal: (previous?['target_kcal'] as num?)?.toDouble(),
+        preservedMinimumKcal: (previous?['minimum_kcal'] as num?)?.toDouble(),
+        preservedMaximumKcal: (previous?['maximum_kcal'] as num?)?.toDouble(),
       );
       if (repo.state['safety_ack_version'] != 'older-obesity-v3') {
         if (!await _confirm(t('safetyTitle'), t('safety'))) return;
@@ -1400,21 +1402,26 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('今天吃得饱吗？',
+                      Text(isToday ? '今天吃得饱吗？' : '这一天吃得饱吗？',
                         style: Theme.of(context).textTheme.titleLarge
                           ?.copyWith(color: PlannerVisual.lunchInk)),
                       const SizedBox(height: 4),
                       const Text('随手选一下，帮助判断下一周要不要调整。不是越饿越好。'),
+                      if (!repo.hasThreeRecordedMeals(date))
+                        const Text('先如实记完三餐，再确认一天都吃得饱；有饥饿或不适可先反馈。'),
                       const SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: [
                           for (final entry in GradualEnergyPolicy.responses.entries)
-                            ChoiceChip(
+                            Semantics(
+                              identifier: 'planner-satiety-${entry.key.replaceAll('_', '-')}',
+                              child: ChoiceChip(
                               label: Text(entry.value),
                               selected: repo.satietyReports[date] == entry.key,
-                              onSelected: busy ? null : (selected) async {
+                              onSelected: busy || (entry.key == 'comfortable' &&
+                                  !repo.hasThreeRecordedMeals(date)) ? null : (selected) async {
                                 if (!selected) return;
                                 try {
                                   await repo.saveSatiety(date, entry.key);
@@ -1424,8 +1431,20 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                                 }
                               },
                             ),
+                            ),
                         ],
                       ),
+                      if (repo.satietyReports.containsKey(date))
+                        plannerSecondaryButton(
+                          'clear-satiety', '撤销饱腹感反馈', busy ? null : () async {
+                            try {
+                              await repo.saveSatiety(date, null);
+                              if (mounted) setState(() => error = null);
+                            } catch (e) {
+                              _showFailure(e);
+                            }
+                          },
+                        ),
                       if (repo.satietyReports[date] == 'too_hungry')
                         const Padding(
                           padding: EdgeInsets.only(top: 8),

@@ -127,6 +127,9 @@ void main() {
     expect(first['gradual_energy_stage']['level'], 1);
     expect(initial, greaterThan(1800));
     for (var i = 0; i < 3; i++) {
+      for (final meal in first['plan']['days'][i]['meals']) {
+        await repo.record(nextDay(start, i), Map<String, dynamic>.from(meal), 'completed');
+      }
       await repo.saveSatiety(nextDay(start, i), 'comfortable');
     }
     final second = await repo.generate(nextDay(start, 7));
@@ -249,4 +252,58 @@ void main() {
       expect(repo.state['plans'].length, 2);
     },
   );
+
+  test('missing meals and undone meals cannot count as comfortable evidence', () async {
+    final start = nextDay(localDay(DateTime.now()), -7);
+    final first = await repo.generate(start);
+    await expectLater(repo.saveSatiety(start, 'comfortable'),
+        throwsA(isA<PlanRejected>()));
+    await repo.saveSatiety(start, 'hungry');
+    for (var i = 0; i < 3; i++) {
+      for (final meal in first['plan']['days'][i]['meals']) {
+        await repo.record(nextDay(start, i), Map<String, dynamic>.from(meal), 'completed');
+      }
+      await repo.saveSatiety(nextDay(start, i), 'comfortable');
+    }
+    expect(repo.gradualStage(nextDay(start, 7))['level'], 2);
+    await repo.record(start, Map<String, dynamic>.from(first['plan']['days'][0]['meals'][0]), 'pending');
+    expect(repo.gradualStage(nextDay(start, 7))['level'], 1);
+    expect(repo.satietyReports[start], 'comfortable');
+  });
+
+  test('actual energy bounds and saved targets survive regeneration and feedback changes', () async {
+    final start = nextDay(localDay(DateTime.now()), -14);
+    for (var week = 0; week < 2; week++) {
+      final weekStart = nextDay(start, week * 7);
+      final revision = await repo.generate(weekStart);
+      for (var i = 0; i < 3; i++) {
+        for (final meal in revision['plan']['days'][i]['meals']) {
+          await repo.record(nextDay(weekStart, i), Map<String, dynamic>.from(meal), 'completed');
+        }
+        await repo.saveSatiety(nextDay(weekStart, i), 'comfortable');
+      }
+    }
+    final today = nextDay(start, 14);
+    final third = await repo.generate(today);
+    expect(third['gradual_energy_stage']['level'], 3);
+    final rule = await repo.rulesForDate(today);
+    final maintenance = (third['target_kcal'] as num).toDouble() / .9;
+    expect(rule.minimumKcal, greaterThanOrEqualTo(maintenance - 350.0001));
+    expect(rule.maximumKcal, lessThanOrEqualTo(maintenance + .0001));
+    for (final day in third['plan']['days']) {
+      final kcal = repo.catalog.dayNutrition(Map<String, dynamic>.from(day))['kcal'] as num;
+      expect(kcal, inInclusiveRange(rule.minimumKcal, rule.maximumKcal));
+    }
+    await repo.saveSatiety(start, 'too_hungry');
+    final regenerated = await repo.generate(today, previous: third);
+    expect(regenerated['target_kcal'], third['target_kcal']);
+    expect(regenerated['minimum_kcal'], third['minimum_kcal']);
+    expect(regenerated['maximum_kcal'], third['maximum_kcal']);
+    expect(regenerated['gradual_energy_stage'], third['gradual_energy_stage']);
+    expect(regenerated['monthly_direction']['target_kcal'], third['target_kcal']);
+    final sameMeal = Map<String, dynamic>.from(regenerated['plan']['days'][0]['meals'][0]);
+    await repo.swap(today, sameMeal['slot'], sameMeal['recipe_id']);
+    expect(repo.state['plans'].last['target_kcal'], third['target_kcal']);
+  });
+
 }

@@ -53,4 +53,29 @@ void main() {
     expect(GradualEnergyPolicy.calorieTarget(5000, strong), 4650);
     expect(GradualEnergyPolicy.calorieTarget(2000, strong), 1800);
   });
+
+  test('three early comfortable days never stand in for a completed week', () {
+    final result = GradualEnergyPolicy.stage(
+      programStart: '2026-10-01', weekStart: '2026-10-08',
+      asOfDate: '2026-10-03', reports: {
+        '2026-10-01': 'comfortable', '2026-10-02': 'comfortable',
+        '2026-10-03': 'comfortable',
+      },
+    );
+    expect(result['level'], 1);
+    expect(result['explanation'], contains('尚未完整结束'));
+  });
+
+  test('symptoms back off even before the latest week finishes', () {
+    final result = GradualEnergyPolicy.stage(
+      programStart: '2026-10-01', weekStart: '2026-10-15',
+      asOfDate: '2026-10-10', reports: {
+        '2026-10-01': 'comfortable', '2026-10-02': 'comfortable',
+        '2026-10-03': 'comfortable', '2026-10-09': 'too_hungry',
+      },
+    );
+    expect(result['level'], 1);
+    expect(result['explanation'], contains('评估'));
+  });
+
 }
