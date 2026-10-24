@@ -20,6 +20,7 @@ import '../domain/nutrition_source_audit.dart';
 import '../domain/monthly_direction.dart';
 import '../domain/grocery_budget.dart';
 import '../domain/cycle_progress_review.dart';
+import '../domain/gradual_energy_policy.dart';
 import '../domain/weight_loss_eligibility.dart';
 import '../domain/medical_safety_screen.dart';
 import 'meal_planning_service.dart';
@@ -106,7 +107,50 @@ class PlannerRepository {
         await _save(s);
       });
 
-  Future<PlanRules> rules({String? simpleSlot}) async {
+  /// Plans already saved remain immutable; satiety only influences NEW weeks.
+  Json gradualStage(String start) {
+    final existing = (state['plans'] as List)
+        .map((row) => row['plan']['period_start'] as String)
+        .toList()..sort();
+    final first = existing.isEmpty || start.compareTo(existing.first) < 0
+        ? start : existing.first;
+    return GradualEnergyPolicy.stage(
+      programStart: first,
+      weekStart: start,
+      reports: Map<String, dynamic>.from(
+        state['satiety_reports'] ?? const <String, dynamic>{},
+      ),
+    );
+  }
+
+  Map<String, dynamic> get satietyReports => Map<String, dynamic>.from(
+    state['satiety_reports'] ?? const <String, dynamic>{},
+  );
+
+  Future<void> saveSatiety(String date, String value) =>
+      _lock.synchronized(() async {
+        if (!GradualEnergyPolicy.responses.containsKey(value) ||
+            !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(date) ||
+            date.compareTo(localDay(now())) > 0 ||
+            !(state['plans'] as List).any((revision) =>
+                (revision['plan']['days'] as List)
+                    .any((day) => day['date'] == date))) {
+          throw const PlanRejected('请从已有计划的当天记录饱腹感');
+        }
+        final s = state;
+        final reports = Map<String, dynamic>.from(
+          s['satiety_reports'] ?? const <String, dynamic>{},
+        );
+        reports[date] = value;
+        s['satiety_reports'] = reports;
+        await _save(s);
+      });
+
+  Future<PlanRules> rules({
+    String? simpleSlot,
+    String? planningStart,
+    double? preservedTargetKcal,
+  }) async {
     if (enforceMedicalScreen) {
       final issue = medicalSafetyIssue;
       if (issue != null) throw PlanRejected(issue);
@@ -115,10 +159,17 @@ class PlannerRepository {
     final issue = weightLossIssue(user);
     if (issue != null) throw PlanRejected(issue);
     final maintenance = TDEECalc.getTDEEKcalIOM2005(user);
-    final target = math.max(1800.0, maintenance * .90);
-    // This catalogue has a conservative floor, not a universal older-adult requirement.
-    // Do not force an unsupported low-expenditure profile into a surplus menu.
-    if (!maintenance.isFinite || target * 1.1 >= maintenance) {
+    // Callers unrelated to newly generated weekly plans retain the old
+    // eligibility check; a saved week keeps its original energy contract.
+    final phase = planningStart == null ? null : gradualStage(planningStart);
+    final target = preservedTargetKcal ??
+        (phase == null
+            ? math.max(1800.0, maintenance * .90)
+            : GradualEnergyPolicy.calorieTarget(maintenance, phase));
+    // No forced weight-loss plan if this catalogue's floor cannot safely fit.
+    if (!maintenance.isFinite || maintenance <= 1800 ||
+        target >= maintenance ||
+        (phase == null && target * 1.1 >= maintenance)) {
       throw const PlanRejected('当前估算能量与本餐单模板不匹配，需要营养师个体评估，暂不自动生成减重餐单。');
     }
     final prefs = state['preferences'];
@@ -132,6 +183,9 @@ class PlannerRepository {
       avoid: List<String>.from(prefs['avoid']),
       simpleSlot: simpleSlot ?? prefs['simple_slot'],
       budget: prefs['budget'] == 'economy' ? 'economy' : 'normal',
+      calorieCeiling: phase == null || preservedTargetKcal != null
+          ? null : maintenance,
+      minimumRatio: phase == null || preservedTargetKcal != null ? .9 : .97,
     );
   }
 
@@ -204,7 +258,7 @@ class PlannerRepository {
             .toList()
           ..sort();
     final user = await users.getUserData();
-    final rule = await rules();
+    final rule = await rules(planningStart: weekStart);
     final measurements = (await weights.getAllEntries())
         .map(
           (w) => <String, dynamic>{'date': localDay(w.date), 'kg': w.weightKg},
@@ -317,11 +371,16 @@ class PlannerRepository {
                 (m) => m['simple'] == true,
               )['slot']
               as String);
-    final rule = await rules(simpleSlot: previousSlot);
+    final rule = await rules(
+      simpleSlot: previousSlot,
+      planningStart: start,
+      preservedTargetKcal: (previous?['target_kcal'] as num?)?.toDouble(),
+    );
     final user = await users.getUserData();
     final s = state;
     final originProfileId = db.activeProfileId;
     final preferencesStamp = jsonEncode(s['preferences']);
+    final satietyStamp = jsonEncode(s['satiety_reports']);
     final medicalStamp = jsonEncode(s['medical_screen']);
     String profileStamp(UserEntity user) => jsonEncode([
       user.birthday.toIso8601String(),
@@ -371,6 +430,7 @@ class PlannerRepository {
           'medical_nutrition_restrictions': 'unknown',
         },
         'monthly_direction': await monthlyDirection(start),
+        'gradual_energy_stage': gradualStage(start),
         'cycle_execution_review': cycleReview(localDay(now())),
         'reference_material': referenceMaterial,
         'references_status': referenceMaterial.isEmpty
@@ -425,6 +485,9 @@ class PlannerRepository {
             '生成期间健康风险核对已修改；请重新生成，避免使用旧方案。',
           );
         }
+      }
+      if (jsonEncode(latest['satiety_reports']) != satietyStamp) {
+        throw const PlanRejected('生成过程中饱腹感记录已改变，请重新生成避免使用旧目标。');
       }
       if (jsonEncode(latest['preferences']) != preferencesStamp) {
         throw const PlanRejected('生成期间偏好或忌口已更改，结果未保存，请重新生成。');
@@ -490,6 +553,7 @@ class PlannerRepository {
         'preferences': latest['preferences'],
         'monthly_direction': await monthlyDirection(start),
         'target_kcal': rule.targetKcal,
+        'gradual_energy_stage': gradualStage(start),
       };
       plans.add(revision);
       await _save(latest);
