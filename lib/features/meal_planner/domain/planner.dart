@@ -129,7 +129,7 @@ class PlanRules {
     this.minimumRatio = .9,
   });
 
-  double get minimumKcal => math.max(1800, targetKcal * minimumRatio);
+  double get minimumKcal => math.max(1800.0, targetKcal * minimumRatio);
   double get maximumKcal => math.min(targetKcal * 1.1, calorieCeiling ?? double.infinity);
   double get planningKcal => (minimumKcal + maximumKcal) / 2;
 
