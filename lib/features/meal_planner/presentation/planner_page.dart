@@ -14,6 +14,7 @@ import 'planner_text.dart';
 import 'grocery_budget_dialog.dart';
 import 'medical_safety_page.dart';
 import 'planner_visual.dart';
+import '../domain/gradual_energy_policy.dart';
 
 Widget plannerSurface(String id, Widget child) =>
     Semantics(identifier: 'planner-$id', child: child);
@@ -138,7 +139,10 @@ class _PlannerPageState extends State<PlannerPage> {
         await _openMedicalSafety();
         if (!mounted || repo.medicalSafetyIssue != null) return;
       }
-      final rules = await repo.rules();
+      final rules = await repo.rules(
+        planningStart: start,
+        preservedTargetKcal: (previous?['target_kcal'] as num?)?.toDouble(),
+      );
       if (repo.state['safety_ack_version'] != 'older-obesity-v3') {
         if (!await _confirm(t('safetyTitle'), t('safety'))) return;
         await repo.acknowledge();
@@ -587,7 +591,7 @@ class _PlannerPageState extends State<PlannerPage> {
                     leading: const Icon(Icons.calendar_month_outlined,
                         color: PlannerVisual.infoInk, size: 30),
                     title: const Text('查看一周安排'),
-                    subtitle: const Text('其他日期、采购清单、下周菜单'),
+                    subtitle: const Text('其他日期、采购清单、下周菜单；每周是否递进看吃饱反馈'),
                     childrenPadding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 8),
                     children: [
@@ -1405,6 +1409,52 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
               ),
             );
             }),
+            if (!futureDay && !medicalBlocked && recordedMeals > 0)
+              Card(
+                color: PlannerVisual.lunch,
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('今天吃得饱吗？',
+                        style: Theme.of(context).textTheme.titleLarge
+                          ?.copyWith(color: PlannerVisual.lunchInk)),
+                      const SizedBox(height: 4),
+                      const Text('随手选一下，帮助判断下一周要不要调整。不是越饿越好。'),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final entry in GradualEnergyPolicy.responses.entries)
+                            ChoiceChip(
+                              label: Text(entry.value),
+                              selected: repo.satietyReports[date] == entry.key,
+                              onSelected: busy ? null : (selected) async {
+                                if (!selected) return;
+                                try {
+                                  await repo.saveSatiety(date, entry.key);
+                                  if (mounted) setState(() => error = null);
+                                } catch (e) {
+                                  _showFailure(e);
+                                }
+                              },
+                            ),
+                        ],
+                      ),
+                      if (repo.satietyReports[date] == 'too_hungry')
+                        const Padding(
+                          padding: EdgeInsets.only(top: 8),
+                          child: Text(
+                            '如果持续很饿、头晕或乏力，先不要硬撑或继续减量，'
+                            '联系医生检查原因。已生成的餐单不会悄悄改动。',
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
             const SizedBox(height: 14),
             Card(
               color: Colors.white,
