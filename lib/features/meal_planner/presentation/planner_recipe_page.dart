@@ -29,8 +29,23 @@ class PlannerRecipePage extends StatelessWidget {
     return Scaffold(
       backgroundColor: PlannerVisual.background,
       appBar: AppBar(title: const Text('食材和做法')),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Semantics(
+            identifier: 'planner-recipe-return',
+            child: FilledButton.icon(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.arrow_back),
+              label: const Text('看完了，返回记录吃饭'),
+            ),
+          ),
+        ),
+      ),
       body: SafeArea(
-        child: ListView(
+        child: Semantics(
+          identifier: 'planner-recipe-details',
+          child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
             Text(mealName, style: Theme.of(context).textTheme.titleMedium),
@@ -59,17 +74,16 @@ class PlannerRecipePage extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16, vertical: 12),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(
-                          catalog.foods[item.key]!['name'] as String,
-                          style: Theme.of(context).textTheme.bodyLarge,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
                       Text(
-                        '${RecipeSteps.grams(item.key as String, (item.value as num) * portion)} 克',
+                        catalog.foods[item.key]!['name'] as String,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${RecipeSteps.grams(item.key as String, (item.value as num) * portion)} 克（${catalog.foods[item.key]!['state']}）',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ],
@@ -89,13 +103,8 @@ class PlannerRecipePage extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.arrow_back),
-              label: const Text('看完了，返回记录吃饭'),
-            ),
           ],
+        ),
         ),
       ),
     );
