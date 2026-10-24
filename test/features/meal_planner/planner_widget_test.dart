@@ -19,6 +19,7 @@ import 'package:opennutritracker/features/meal_planner/domain/planner.dart';
 import 'package:opennutritracker/features/meal_planner/data/planner_repository.dart';
 import 'package:opennutritracker/features/meal_planner/data/meal_planning_service.dart';
 import 'package:opennutritracker/features/meal_planner/presentation/planner_page.dart';
+import 'package:opennutritracker/features/meal_planner/presentation/planner_recipe_page.dart';
 import 'planner_persistence_test.dart'
     show TestDB, TestUser, TestWeights, TestTracked, OfflineCredentials;
 
@@ -208,6 +209,25 @@ void main() {
       expect(tester.takeException(), null);
     },
   );
+  testWidgets('recipe details open on a separate page and return to recording', (tester) async {
+    final day = copyJson(repo.state['plans'][0]['plan']['days'][0]);
+    await tester.pumpWidget(app(PlannerDayPage(repo: repo, day: day)));
+    await tester.pumpAndSettle();
+    expect(find.byType(PlannerRecipePage), findsNothing);
+    await tester.ensureVisible(find.bySemanticsIdentifier('planner-recipe-breakfast'));
+    await tester.tap(find.bySemanticsIdentifier('planner-recipe-breakfast'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PlannerRecipePage), findsOneWidget);
+    expect(find.text('先准备食材'), findsOneWidget);
+    expect(find.text('再照着做'), findsOneWidget);
+    await tester.ensureVisible(find.text('看完了，返回记录吃饭'));
+    await tester.tap(find.text('看完了，返回记录吃饭'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PlannerRecipePage), findsNothing);
+    expect(find.bySemanticsIdentifier('planner-complete-breakfast'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'failed completion is visible without scrolling and leaves no intake',
     (tester) async {
