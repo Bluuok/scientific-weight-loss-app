@@ -782,7 +782,7 @@ class _PlannerPageState extends State<PlannerPage> {
               builder: (context, snapshot) =>
                   snapshot.hasData && _profileIssue == null
                   ? Text(
-                      '${t('stage')}: ${((state['initial_weight_kg'] ?? snapshot.data!.weightKG) * .95).toStringAsFixed(1)} 千克 · ${t('weight')}: ${snapshot.data!.weightKG} 千克',
+                      '目前 ${snapshot.data!.weightKG} 千克 · 长期参考点 ${((state['initial_weight_kg'] ?? snapshot.data!.weightKG) * .95).toStringAsFixed(1)} 千克（不是本月必须达到）',
                     )
                   : const SizedBox(),
             ),
@@ -1153,7 +1153,7 @@ class _PlannerDayPageState extends State<PlannerDayPage> {
                           style: Theme.of(context).textTheme.titleLarge
                             ?.copyWith(color: PlannerVisual.ink)),
                         if (meal['simple'])
-                          const Text('这是一顿简洁餐，照着做就行。'),
+                          const Text('这顿做法比较简单，照着做就行。'),
                       Text(
                         '本餐用油 ${RecipeSteps.grams('oil', ((recipe['ingredients']['oil'] ?? 0) as num) * meal['portion'])}克 · 食盐 ${RecipeSteps.grams('salt', ((recipe['ingredients']['salt'] ?? 0) as num) * meal['portion'])}克',
                         style: const TextStyle(
