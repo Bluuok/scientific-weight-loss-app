@@ -298,10 +298,7 @@ class PlannerRepository {
   }
 
   Future<PlanRules> rulesForDate(String date, {String? simpleSlot}) async {
-    final matching = (state['plans'] as List).where((row) =>
-        date.compareTo(row['plan']['period_start']) >= 0 &&
-        date.compareTo(nextDay(row['plan']['period_start'], 6)) <= 0);
-    final previous = matching.isEmpty ? null : matching.last;
+    final previous = revisionForDate(date);
     return rules(
       simpleSlot: simpleSlot,
       planningStart: previous?['plan']['period_start'] as String? ?? date,
@@ -420,6 +417,42 @@ class PlannerRepository {
     };
   }
 
+  /// A policy rebuild archives pre-existing future forecasts from its cutover.
+  /// Descendant swaps retain the marker but must not introduce another cutover.
+  Json? revisionForDate(String date) {
+    Json? active;
+    final refreshes = <String>{};
+    for (final row in List<Json>.from(state['plans'])) {
+      final start = row['plan']['period_start'] as String;
+      final source = row['policy_refresh_source_id'];
+      if (source != null &&
+          refreshes.add('$source/${row['planning_policy_version']}') &&
+          start.compareTo(date) <= 0) {
+        active = null;
+      }
+      if (date.compareTo(start) >= 0 &&
+          date.compareTo(nextDay(start, 6)) <= 0) {
+        active = row;
+      }
+    }
+    return active;
+  }
+
+  bool revisionFullyActive(Json revision) =>
+      (revision['plan']['days'] as List).every(
+          (day) => revisionForDate(day['date'])?['id'] == revision['id']);
+
+  int _nextVersion(String start) {
+    var highest = 0;
+    for (final row in state['plans']) {
+      if (row['plan']['period_start'] == start) {
+        final version = row['version'] as int? ?? 0;
+        if (version > highest) highest = version;
+      }
+    }
+    return highest + 1;
+  }
+
   bool policyRefreshNeeded(Json revision) =>
       MealPlanPolicyRelease.refreshNeeded(
         revision,
@@ -433,7 +466,7 @@ class PlannerRepository {
       throw const PlanRejected('该计划已使用新策略或已经重建，无须重复生成。');
     }
     final today = localDay(now());
-    if (!(source['plan']['days'] as List).any((d) => d['date'] == today)) {
+    if (revisionForDate(today)?['id'] != source['id']) {
       throw const PlanRejected('只能从正在执行的旧计划升级未来餐次。');
     }
     var already = ['breakfast', 'lunch', 'dinner'].any((slot) {
@@ -463,6 +496,9 @@ class PlannerRepository {
           start != await policyRefreshStart(candidates.single)) {
         throw const PlanRejected('旧计划或已记录餐次发生变化，请重新打开并升级。');
       }
+    }
+    if (previous != null && !revisionFullyActive(previous)) {
+      throw const PlanRejected('这份旧餐单已被新版替代，请打开当前计划。');
     }
     final previousSlot = previous == null
         ? null
@@ -633,20 +669,18 @@ class PlannerRepository {
         }
       }
       if (policyRefreshSourceId == null &&
-          previous == null && existing.isNotEmpty) {
+          previous == null && existing.any((row) => revisionFullyActive(row))) {
         throw const PlanRejected('This week already exists');
       }
       if (policyRefreshSourceId == null &&
           previous == null &&
-          plans.any(
-            (p) =>
-                start.compareTo(nextDay(p['plan']['period_start'], 6)) <= 0 &&
-                nextDay(start, 6).compareTo(p['plan']['period_start']) >= 0,
-          )) {
+          List.generate(7, (i) => nextDay(start, i))
+              .any((date) => revisionForDate(date) != null)) {
         throw const PlanRejected('Overlapping plan dates');
       }
       if (previous != null &&
-          (existing.isEmpty || existing.last['id'] != previous['id'])) {
+          (existing.isEmpty || existing.last['id'] != previous['id'] ||
+              !revisionFullyActive(previous))) {
         throw const PlanRejected('Plan changed; reopen before adjusting');
       }
       var preserved = <String, Json>{};
@@ -680,15 +714,17 @@ class PlannerRepository {
           previousSlot != s['preferences']['simple_slot']) {
         result['notice'] = '简洁餐时段变更从下一周生效，本周保留原时段并调整尚未执行的菜式。';
       }
+      final version = _nextVersion(start);
       final revision = <String, dynamic>{
         ...result,
-        'id': '$start-v${existing.length + 1}',
-        'version': existing.length + 1,
+        'id': '$start-v$version',
+        'version': version,
         'created_at': now().toIso8601String(),
         'validation_version': PlanRules.version,
-        'planning_policy_version': MealPlanPolicyRelease.current,
-        if (policyRefreshSourceId != null)
-          'policy_refresh_source_id': policyRefreshSourceId,
+        'planning_policy_version': previous == null
+            ? MealPlanPolicyRelease.current : previous['planning_policy_version'],
+        'policy_refresh_source_id': ?policyRefreshSourceId ??
+            previous?['policy_refresh_source_id'],
         'reason': reason,
         'preferences': latest['preferences'],
         'monthly_direction': await monthlyDirection(start, planRules: rule),
@@ -722,6 +758,15 @@ class PlannerRepository {
       throw const PlanRejected('Invalid actual portion');
     }
     if (meal != null && (status == 'completed' || actualPortion != null)) {
+      final active = revisionForDate(date);
+      final currentMeal = active == null ? null :
+          ((active['plan']['days'] as List).firstWhere(
+            (day) => day['date'] == date)['meals'] as List)
+              .where((item) => item['slot'] == meal['slot']).firstOrNull;
+      if (status == 'completed' &&
+          (currentMeal == null || jsonEncode(currentMeal) != jsonEncode(meal))) {
+        throw const PlanRejected('餐单已更新，请重新打开当天计划后记录；实际吃过的其他食物请记入日记。');
+      }
       await rulesForDate(date); // Check before persisting or writing any intake.
       if (!catalog.allowed(
         meal['recipe_id'],
@@ -778,19 +823,12 @@ class PlannerRepository {
   }
 
   Future<Json> swap(String date, String slot, String recipeId) async {
-    final periods = (state['plans'] as List)
-        .where(
-          (p) =>
-              date.compareTo(p['plan']['period_start']) >= 0 &&
-              date.compareTo(nextDay(p['plan']['period_start'], 6)) <= 0,
-        )
-        .toList();
-    final oldSlot = periods.isEmpty
+    final active = revisionForDate(date);
+    final oldSlot = active == null
         ? null
-        : (periods.last['plan']['days'][0]['meals'] as List).firstWhere(
+        : (active['plan']['days'][0]['meals'] as List).firstWhere(
                 (m) => m['simple'] == true,
-              )['slot']
-              as String;
+              )['slot'] as String;
     final rule = await rulesForDate(date, simpleSlot: oldSlot);
     if (await diarySlotRecorded(date, slot)) {
       throw const PlanRejected('饮食日记已有这餐的实际记录，请保留已吃餐次。');
@@ -803,15 +841,11 @@ class PlannerRepository {
           'Only today or future unrecorded meals can be swapped',
         );
       }
-      final revisions = (s['plans'] as List)
-          .where(
-            (p) =>
-                date.compareTo(p['plan']['period_start']) >= 0 &&
-                date.compareTo(nextDay(p['plan']['period_start'], 6)) <= 0,
-          )
-          .toList();
-      if (revisions.isEmpty) throw const PlanRejected('Plan missing');
-      final updated = copyJson(Map<String, dynamic>.from(revisions.last));
+      final active = revisionForDate(date);
+      if (active == null || !revisionFullyActive(active)) {
+        throw const PlanRejected('这份餐单已被新版替代，请打开当前计划。');
+      }
+      final updated = copyJson(active);
       final day = (updated['plan']['days'] as List).firstWhere(
         (d) => d['date'] == date,
       );
@@ -821,14 +855,14 @@ class PlannerRepository {
         updated['plan'],
         updated['plan']['period_start'],
         preservedMeals: preservedPlanMeals(
-          Map<String, dynamic>.from(revisions.last['plan']),
+          Map<String, dynamic>.from(active['plan']),
           Map<String, dynamic>.from(s['records']),
           localDay(now()),
         ),
       );
-      updated['id'] =
-          "${updated['plan']['period_start']}-v${revisions.length + 1}";
-      updated['version'] = revisions.length + 1;
+      final version = _nextVersion(updated['plan']['period_start']);
+      updated['id'] = "${updated['plan']['period_start']}-v$version";
+      updated['version'] = version;
       updated['source'] = 'manual';
       updated['notice'] = 'local recipe swap';
       updated['reason'] = 'user requested $date/$slot swap';

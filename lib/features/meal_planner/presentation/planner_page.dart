@@ -197,6 +197,14 @@ class _PlannerPageState extends State<PlannerPage> {
   }
 
   Future<void> _openDay(Json day, {String? initialSlot}) async {
+    final active = repo.revisionForDate(day['date']);
+    if (active == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('这天的旧餐单已归档，请安排新版菜谱。')));
+      return;
+    }
+    day = Map<String, dynamic>.from((active['plan']['days'] as List)
+        .firstWhere((item) => item['date'] == day['date']));
     await Navigator.push(
       context,
       MaterialPageRoute<void>(
@@ -255,7 +263,9 @@ class _PlannerPageState extends State<PlannerPage> {
     for (final p in revisions) {
       latest[p['plan']['period_start']] = p;
     }
-    final weeks = (_profileIssue == null ? latest.values.toList() : <Json>[])
+    final weeks = (_profileIssue == null ? latest.values.where((p) =>
+        (p['plan']['days'] as List).any((day) =>
+            repo.revisionForDate(day['date'])?['id'] == p['id'])).toList() : <Json>[])
       ..sort(
         (a, b) =>
             b['plan']['period_start'].compareTo(a['plan']['period_start']),
@@ -269,11 +279,7 @@ class _PlannerPageState extends State<PlannerPage> {
             )
             .firstOrNull ??
         weeks.firstOrNull;
-    final todayPlan = weeks
-        .where(
-          (p) => (p['plan']['days'] as List).any((d) => d['date'] == today),
-        )
-        .firstOrNull;
+    final todayPlan = _profileIssue == null ? repo.revisionForDate(today) : null;
     final todayMeal = todayPlan == null
         ? null
         : (todayPlan['plan']['days'] as List).firstWhere(
@@ -288,7 +294,8 @@ class _PlannerPageState extends State<PlannerPage> {
             .length;
     final days = current == null
         ? <dynamic>[]
-        : current['plan']['days'] as List;
+        : (current['plan']['days'] as List).where((day) =>
+            repo.revisionForDate(day['date'])?['id'] == current['id']).toList();
     final weekMealsRecorded = days.fold<int>(
       0, (total, day) => total + mealRecordCount(day['date'] as String),
     );
@@ -650,8 +657,8 @@ class _PlannerPageState extends State<PlannerPage> {
                                 ? '本周记录情况' : '所选一周记录情况',
                               style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(color: PlannerVisual.infoInk)),
-                            Text('$weekMealsRecorded / 21 餐已记录 · '
-                              '$weekReviewsRecorded / 7 天已回顾',
+                            Text('$weekMealsRecorded / ${days.length * 3} 餐已记录 · '
+                              '$weekReviewsRecorded / ${days.length} 天已回顾',
                               style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(color: PlannerVisual.infoInk)),
                           ],
@@ -734,10 +741,12 @@ class _PlannerPageState extends State<PlannerPage> {
                           ),
                         ),
                       const SizedBox(height: 8),
+                      if (!repo.revisionFullyActive(current))
+                        const Text('旧版仅保留已生效日期；后续菜谱请查看新版，买菜清单和调整请使用完整新版周。'),
                       plannerSecondaryButton(
                         'grocery-list',
                         '查看7天买菜清单',
-                        busy ? null : () => showDialog<void>(
+                        busy || !repo.revisionFullyActive(current) ? null : () => showDialog<void>(
                           context: context,
                           builder: (_) => GroceryBudgetDialog(
                               repo: repo, plan: current['plan']),
@@ -756,7 +765,7 @@ class _PlannerPageState extends State<PlannerPage> {
                       plannerSecondaryButton(
                         'adjust',
                         busy ? '正在调整菜单…' : '调整本周还没吃的菜',
-                        busy ? null : () => _generate(
+                        busy || !repo.revisionFullyActive(current) ? null : () => _generate(
                           current['plan']['period_start'],
                           previous: current,
                         ),
