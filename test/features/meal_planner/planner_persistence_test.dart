@@ -154,6 +154,124 @@ void main() {
     );
   });
 
+  test('old diet strategy refresh replaces only future menu, not historical diary',
+      () async {
+    final today = localDay(DateTime.now());
+    final original = await repo.generate(today);
+    final previousPlan = copyJson(original['plan']);
+    final saved = repo.state;
+    (saved['plans'] as List).first.remove('planning_policy_version');
+    await db.plans.put('state', jsonEncode(saved));
+    final legacy = Map<String, dynamic>.from(repo.state['plans'][0]);
+    expect(repo.policyRefreshNeeded(legacy), true);
+    expect(await repo.policyRefreshStart(legacy), today);
+    final refreshed = await repo.generate(
+      today,
+      policyRefreshSourceId: legacy['id'],
+    );
+    expect(refreshed['policy_refresh_source_id'], legacy['id']);
+    expect(refreshed['gradual_energy_stage']['level'], 1);
+    expect(repo.gradualStage(nextDay(today, 7))['week'], 2);
+    expect(repo.state['plans'].length, 2);
+    expect(repo.state['plans'][0]['plan'], previousPlan);
+    expect(repo.policyRefreshNeeded(legacy), false);
+    await expectLater(
+      repo.generate(today, policyRefreshSourceId: legacy['id']),
+      throwsA(isA<PlanRejected>()),
+    );
+    await Hive.close();
+    await open();
+    expect(repo.state['plans'].length, 2);
+    expect(repo.state['plans'].last['id'], refreshed['id']);
+  });
+
+  test('an already eaten meal forces refreshed seven-day menu to start tomorrow',
+      () async {
+    final today = localDay(DateTime.now());
+    final original = await repo.generate(today);
+    final meal = Map<String, dynamic>.from(
+      original['plan']['days'][0]['meals'][0],
+    );
+    await repo.record(today, meal, 'completed');
+    final before = await intake.getAllIntakesDBO();
+    final saved = repo.state;
+    (saved['plans'] as List).first.remove('planning_policy_version');
+    await db.plans.put('state', jsonEncode(saved));
+    final source = Map<String, dynamic>.from(repo.state['plans'].first);
+    final tomorrow = nextDay(today, 1);
+    expect(await repo.policyRefreshStart(source), tomorrow);
+    final replacement = await repo.generate(
+      tomorrow,
+      policyRefreshSourceId: source['id'],
+    );
+    expect(replacement['plan']['period_start'], tomorrow);
+    expect(repo.state['records']['$today/breakfast']['status'], 'completed');
+    expect((await intake.getAllIntakesDBO()).length, before.length);
+    expect(repo.state['plans'][0]['plan'], original['plan']);
+    expect(repo.policyRefreshNeeded(source), false);
+    expect((await repo.rulesForDate(tomorrow)).targetKcal,
+      closeTo(replacement['target_kcal'], 0.01));
+  });
+
+  test('refresh archives old future forecasts and uses one effective revision', () async {
+    final today = localDay(DateTime.now());
+    final first = await repo.generate(nextDay(today, -3));
+    final future = await repo.generate(nextDay(today, 4));
+    final saved = repo.state;
+    for (final row in saved['plans']) {
+      row.remove('planning_policy_version');
+    }
+    await db.plans.put('state', jsonEncode(saved));
+    final source = Map<String, dynamic>.from(repo.state['plans'][0]);
+    final refreshed = await repo.generate(today,
+        policyRefreshSourceId: source['id']);
+    // The previously pre-built week must not win at the overlapping boundary.
+    expect(repo.revisionForDate(nextDay(today, 4))?['id'], refreshed['id']);
+    expect(repo.revisionForDate(nextDay(today, 7)), isNull);
+    expect(repo.revisionForDate(nextDay(today, -1))?['id'], first['id']);
+    expect(repo.revisionFullyActive(source), false);
+    expect(repo.revisionFullyActive(future), false);
+    await expectLater(repo.generate(source['plan']['period_start'], previous: source),
+        throwsA(isA<PlanRejected>()));
+    await expectLater(repo.swap(nextDay(today, 7), 'lunch', 'missing'),
+        throwsA(isA<PlanRejected>()));
+    // A new week can reuse archived dates without erasing old plan rows.
+    final next = await repo.generate(nextDay(today, 7));
+    expect(repo.revisionForDate(nextDay(today, 7))?['id'], next['id']);
+    final day = refreshed['plan']['days'][0];
+    final meal = (day['meals'] as List).first;
+    await repo.swap(today, meal['slot'], meal['recipe_id']);
+    expect(repo.revisionForDate(nextDay(today, 7))?['id'], next['id']);
+    final ids = (repo.state['plans'] as List).map((p) => p['id']).toList();
+    expect(ids.toSet().length, ids.length);
+    await Hive.close();
+    await open();
+    expect(repo.revisionForDate(nextDay(today, 4))?['policy_refresh_source_id'], source['id']);
+    expect(repo.revisionForDate(nextDay(today, 7))?['id'], next['id']);
+  });
+
+  test('adjustment preserves legacy policy and stale sources cannot upgrade', () async {
+    final today = localDay(DateTime.now());
+    await repo.generate(today);
+    final saved = repo.state;
+    saved['plans'][0].remove('planning_policy_version');
+    await db.plans.put('state', jsonEncode(saved));
+    final source = Map<String, dynamic>.from(repo.state['plans'][0]);
+    final adjusted = await repo.generate(today, previous: source);
+    expect(adjusted['planning_policy_version'], isNull);
+    expect(repo.policyRefreshNeeded(adjusted), true);
+    await expectLater(repo.policyRefreshStart(source), throwsA(isA<PlanRejected>()));
+    // Unusually high prior version values must not produce duplicate IDs.
+    final revised = repo.state;
+    revised['plans'].last['version'] = 9;
+    revised['plans'].last['id'] = '$today-v9';
+    await db.plans.put('state', jsonEncode(revised));
+    final latest = Map<String, dynamic>.from(repo.state['plans'].last);
+    final rebuilt = await repo.generate(today, policyRefreshSourceId: latest['id']);
+    expect(rebuilt['version'], 10);
+    expect(rebuilt['id'], '$today-v10');
+  });
+
   test('local price entries persist across encrypted Hive restart', () async {
     final today = localDay(DateTime.now());
     final revision = await repo.generate(today);

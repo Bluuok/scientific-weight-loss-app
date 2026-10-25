@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:opennutritracker/core/domain/entity/user_entity.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
@@ -704,6 +705,36 @@ void main() {
     expect(repo.satietyReports[day['date']], isNull);
     expect(find.bySemanticsIdentifier('planner-clear-satiety'), findsNothing);
     expect(await repo.intakes.getAllIntakesDBO(), isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('policy upgrade stays readable at 2x and cancelling leaves plans intact', (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.runAsync(() async {
+      final saved = repo.state;
+      saved['plans'][0].remove('planning_policy_version');
+      await repo.db.plannerBox.put('state', jsonEncode(saved));
+    });
+    await tester.runAsync(() async {
+      await tester.pumpWidget(app(const PlannerPage(), scale: 2));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+    await tester.pumpAndSettle();
+    expect(find.text('饮食方案已升级'), findsOneWidget);
+    final upgrade = find.text('重新安排新版菜谱');
+    await tester.ensureVisible(upgrade);
+    await tester.pumpAndSettle();
+    await tester.runAsync(() async {
+      await tester.tap(upgrade);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsOneWidget);
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+    expect(repo.state['plans'].length, 1);
+    expect(repo.state['records'], isEmpty);
     expect(tester.takeException(), isNull);
   });
 

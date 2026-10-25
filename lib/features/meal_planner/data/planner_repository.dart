@@ -21,6 +21,7 @@ import '../domain/monthly_direction.dart';
 import '../domain/grocery_budget.dart';
 import '../domain/cycle_progress_review.dart';
 import '../domain/gradual_energy_policy.dart';
+import '../domain/meal_plan_policy_release.dart';
 import '../domain/weight_loss_eligibility.dart';
 import '../domain/medical_safety_screen.dart';
 import 'meal_planning_service.dart';
@@ -113,8 +114,17 @@ class PlannerRepository {
     final existing = (snapshot['plans'] as List)
         .map((row) => row['plan']['period_start'] as String)
         .toList()..sort();
-    final first = existing.isEmpty || start.compareTo(existing.first) < 0
-        ? start : existing.first;
+    final resets = (snapshot['plans'] as List)
+        .where((row) => row['policy_refresh_source_id'] != null &&
+            (row['plan']['period_start'] as String).compareTo(start) <= 0)
+        .map((row) => row['plan']['period_start'] as String)
+        .toList()..sort();
+    // After a major policy reset, prior tolerance must NOT unlock a more
+    // restrictive first week. Begin a new adaptation window.
+    final first = resets.isNotEmpty
+        ? resets.last
+        : existing.isEmpty || start.compareTo(existing.first) < 0
+            ? start : existing.first;
     return GradualEnergyPolicy.stage(
       programStart: first,
       weekStart: start,
@@ -181,6 +191,7 @@ class PlannerRepository {
     double? preservedTargetKcal,
     double? preservedMinimumKcal,
     double? preservedMaximumKcal,
+    bool resetAdaptation = false,
   }) async {
     if (enforceMedicalScreen) {
       final issue = medicalSafetyIssue;
@@ -190,7 +201,11 @@ class PlannerRepository {
     final issue = weightLossIssue(user);
     if (issue != null) throw PlanRejected(issue);
     final maintenance = TDEECalc.getTDEEKcalIOM2005(user);
-    final phase = gradualStage(planningStart ?? localDay(now()));
+    final stageStart = planningStart ?? localDay(now());
+    final phase = resetAdaptation
+        ? GradualEnergyPolicy.stage(
+            programStart: stageStart, weekStart: stageStart, reports: {})
+        : gradualStage(stageStart);
     final legacyContract = preservedTargetKcal != null &&
         preservedMinimumKcal == null && preservedMaximumKcal == null;
     final target = preservedTargetKcal ??
@@ -283,10 +298,7 @@ class PlannerRepository {
   }
 
   Future<PlanRules> rulesForDate(String date, {String? simpleSlot}) async {
-    final matching = (state['plans'] as List).where((row) =>
-        date.compareTo(row['plan']['period_start']) >= 0 &&
-        date.compareTo(nextDay(row['plan']['period_start'], 6)) <= 0);
-    final previous = matching.isEmpty ? null : matching.last;
+    final previous = revisionForDate(date);
     return rules(
       simpleSlot: simpleSlot,
       planningStart: previous?['plan']['period_start'] as String? ?? date,
@@ -405,12 +417,89 @@ class PlannerRepository {
     };
   }
 
+  /// A policy rebuild archives pre-existing future forecasts from its cutover.
+  /// Descendant swaps retain the marker but must not introduce another cutover.
+  Json? revisionForDate(String date) {
+    Json? active;
+    final refreshes = <String>{};
+    for (final row in List<Json>.from(state['plans'])) {
+      final start = row['plan']['period_start'] as String;
+      final source = row['policy_refresh_source_id'];
+      if (source != null &&
+          refreshes.add('$source/${row['planning_policy_version']}') &&
+          start.compareTo(date) <= 0) {
+        active = null;
+      }
+      if (date.compareTo(start) >= 0 &&
+          date.compareTo(nextDay(start, 6)) <= 0) {
+        active = row;
+      }
+    }
+    return active;
+  }
+
+  bool revisionFullyActive(Json revision) =>
+      (revision['plan']['days'] as List).every(
+          (day) => revisionForDate(day['date'])?['id'] == revision['id']);
+
+  int _nextVersion(String start) {
+    var highest = 0;
+    for (final row in state['plans']) {
+      if (row['plan']['period_start'] == start) {
+        final version = row['version'] as int? ?? 0;
+        if (version > highest) highest = version;
+      }
+    }
+    return highest + 1;
+  }
+
+  bool policyRefreshNeeded(Json revision) =>
+      MealPlanPolicyRelease.refreshNeeded(
+        revision,
+        List<Json>.from(state['plans']),
+      );
+
+  /// Keep anything already eaten today. The fresh seven-day plan can start
+  /// today only if there are no actual/explicit meal records for today.
+  Future<String> policyRefreshStart(Json source) async {
+    if (!policyRefreshNeeded(source)) {
+      throw const PlanRejected('该计划已使用新策略或已经重建，无须重复生成。');
+    }
+    final today = localDay(now());
+    if (revisionForDate(today)?['id'] != source['id']) {
+      throw const PlanRejected('只能从正在执行的旧计划升级未来餐次。');
+    }
+    var already = ['breakfast', 'lunch', 'dinner'].any((slot) {
+      final record = state['records']['$today/$slot'];
+      return record != null && record['status'] != 'pending';
+    });
+    for (final slot in ['breakfast', 'lunch', 'dinner']) {
+      if (await diarySlotRecorded(today, slot)) already = true;
+    }
+    return already ? nextDay(today, 1) : today;
+  }
+
   Future<Json> generate(
     String start, {
     Json? previous,
     bool mock = false,
     String reason = '',
+    String? policyRefreshSourceId,
   }) async {
+    if (policyRefreshSourceId != null) {
+      if (previous != null) {
+        throw const PlanRejected('策略升级和旧计划微调不能同时进行。');
+      }
+      final candidates = List<Json>.from(state['plans'])
+          .where((p) => p['id'] == policyRefreshSourceId).toList();
+      if (candidates.length != 1 ||
+          start != await policyRefreshStart(candidates.single)) {
+        throw const PlanRejected('旧计划或已记录餐次发生变化，请重新打开并升级。');
+      }
+    }
+    if (previous != null && !revisionFullyActive(previous)) {
+      throw const PlanRejected('这份旧餐单已被新版替代，请打开当前计划。');
+    }
     final previousSlot = previous == null
         ? null
         : ((previous['plan']['days'][0]['meals'] as List).firstWhere(
@@ -423,6 +512,7 @@ class PlannerRepository {
       preservedTargetKcal: (previous?['target_kcal'] as num?)?.toDouble(),
       preservedMinimumKcal: (previous?['minimum_kcal'] as num?)?.toDouble(),
       preservedMaximumKcal: (previous?['maximum_kcal'] as num?)?.toDouble(),
+      resetAdaptation: policyRefreshSourceId != null,
     );
     final user = await users.getUserData();
     final s = state;
@@ -430,7 +520,10 @@ class PlannerRepository {
     final preferencesStamp = jsonEncode(s['preferences']);
     final satietyStamp = jsonEncode(s['satiety_reports']);
     final stageStamp = jsonEncode(gradualStage(start));
-    final energyStage = previous == null ? gradualStage(start) :
+    final energyStage = policyRefreshSourceId != null
+        ? GradualEnergyPolicy.stage(
+            programStart: start, weekStart: start, reports: {})
+        : previous == null ? gradualStage(start) :
         previous['gradual_energy_stage'] ?? <String, dynamic>{
           'version': 'legacy-saved-target',
           'explanation': '沿用已保存计划的能量目标，不自动改写历史安排。',
@@ -462,9 +555,11 @@ class PlannerRepository {
       rule,
       start,
       {
-        'mode': previous == null
-            ? ((s['plans'] as List).isEmpty ? 'initial' : 'next_week')
-            : 'adjust_remaining',
+        'mode': policyRefreshSourceId != null
+            ? 'policy_refresh'
+            : previous == null
+                ? ((s['plans'] as List).isEmpty ? 'initial' : 'next_week')
+                : 'adjust_remaining',
         'profile': {
           'self_reported_risk_screen': enforceMedicalScreen
               ? 'no_reported_risk_flags_not_medical_clearance'
@@ -494,13 +589,20 @@ class PlannerRepository {
           ...Map<String, dynamic>.from(s['preferences']),
           'simple_slot': rule.simpleSlot,
         },
-        'history_summary': await history(
-          previous == null ? start : nextDay(localDay(now()), 1),
-        ),
-        'current_plan': previous?['plan'],
+        // A policy refresh starts a genuinely new menu: no old recipe text,
+        // no reuse of earlier AI suggestions. Actual eaten data remains local.
+        'history_summary': policyRefreshSourceId == null
+            ? await history(
+                previous == null ? start : nextDay(localDay(now()), 1))
+            : <String, dynamic>{
+                'policy_refresh': 'do_not_copy_old_menus',
+                'previous_intake_not_sent': true,
+              },
+        'current_plan': policyRefreshSourceId != null ? null : previous?['plan'],
         'execution_records': {
           for (final e in (s['records'] as Map).entries)
-            if ((e.key as String).compareTo(nextDay(start, -14)) >= 0 &&
+            if (policyRefreshSourceId == null &&
+                (e.key as String).compareTo(nextDay(start, -14)) >= 0 &&
                 (e.key as String)
                         .substring(0, 10)
                         .compareTo(nextDay(start, 6)) <=
@@ -552,19 +654,33 @@ class PlannerRepository {
       final existing = plans
           .where((p) => p['plan']['period_start'] == start)
           .toList();
-      if (previous == null && existing.isNotEmpty) {
+      if (policyRefreshSourceId != null) {
+        final sources = plans.where((p) => p['id'] == policyRefreshSourceId)
+            .toList();
+        if (sources.length != 1 ||
+            !MealPlanPolicyRelease.refreshNeeded(
+                Map<String, dynamic>.from(sources.single),
+                List<Json>.from(plans))) {
+          throw const PlanRejected('该旧计划已升级，请勿重复提交。');
+        }
+        if (start != await policyRefreshStart(
+            Map<String, dynamic>.from(sources.single))) {
+          throw const PlanRejected('新记录改变了升级起始日期，请重新生成以保护已吃餐次。');
+        }
+      }
+      if (policyRefreshSourceId == null &&
+          previous == null && existing.any((row) => revisionFullyActive(row))) {
         throw const PlanRejected('This week already exists');
       }
-      if (previous == null &&
-          plans.any(
-            (p) =>
-                start.compareTo(nextDay(p['plan']['period_start'], 6)) <= 0 &&
-                nextDay(start, 6).compareTo(p['plan']['period_start']) >= 0,
-          )) {
+      if (policyRefreshSourceId == null &&
+          previous == null &&
+          List.generate(7, (i) => nextDay(start, i))
+              .any((date) => revisionForDate(date) != null)) {
         throw const PlanRejected('Overlapping plan dates');
       }
       if (previous != null &&
-          (existing.isEmpty || existing.last['id'] != previous['id'])) {
+          (existing.isEmpty || existing.last['id'] != previous['id'] ||
+              !revisionFullyActive(previous))) {
         throw const PlanRejected('Plan changed; reopen before adjusting');
       }
       var preserved = <String, Json>{};
@@ -598,12 +714,17 @@ class PlannerRepository {
           previousSlot != s['preferences']['simple_slot']) {
         result['notice'] = '简洁餐时段变更从下一周生效，本周保留原时段并调整尚未执行的菜式。';
       }
+      final version = _nextVersion(start);
       final revision = <String, dynamic>{
         ...result,
-        'id': '$start-v${existing.length + 1}',
-        'version': existing.length + 1,
+        'id': '$start-v$version',
+        'version': version,
         'created_at': now().toIso8601String(),
         'validation_version': PlanRules.version,
+        'planning_policy_version': previous == null
+            ? MealPlanPolicyRelease.current : previous['planning_policy_version'],
+        'policy_refresh_source_id': ?policyRefreshSourceId ??
+            previous?['policy_refresh_source_id'],
         'reason': reason,
         'preferences': latest['preferences'],
         'monthly_direction': await monthlyDirection(start, planRules: rule),
@@ -637,6 +758,15 @@ class PlannerRepository {
       throw const PlanRejected('Invalid actual portion');
     }
     if (meal != null && (status == 'completed' || actualPortion != null)) {
+      final active = revisionForDate(date);
+      final currentMeal = active == null ? null :
+          ((active['plan']['days'] as List).firstWhere(
+            (day) => day['date'] == date)['meals'] as List)
+              .where((item) => item['slot'] == meal['slot']).firstOrNull;
+      if (status == 'completed' &&
+          (currentMeal == null || jsonEncode(currentMeal) != jsonEncode(meal))) {
+        throw const PlanRejected('餐单已更新，请重新打开当天计划后记录；实际吃过的其他食物请记入日记。');
+      }
       await rulesForDate(date); // Check before persisting or writing any intake.
       if (!catalog.allowed(
         meal['recipe_id'],
@@ -693,19 +823,12 @@ class PlannerRepository {
   }
 
   Future<Json> swap(String date, String slot, String recipeId) async {
-    final periods = (state['plans'] as List)
-        .where(
-          (p) =>
-              date.compareTo(p['plan']['period_start']) >= 0 &&
-              date.compareTo(nextDay(p['plan']['period_start'], 6)) <= 0,
-        )
-        .toList();
-    final oldSlot = periods.isEmpty
+    final active = revisionForDate(date);
+    final oldSlot = active == null
         ? null
-        : (periods.last['plan']['days'][0]['meals'] as List).firstWhere(
+        : (active['plan']['days'][0]['meals'] as List).firstWhere(
                 (m) => m['simple'] == true,
-              )['slot']
-              as String;
+              )['slot'] as String;
     final rule = await rulesForDate(date, simpleSlot: oldSlot);
     if (await diarySlotRecorded(date, slot)) {
       throw const PlanRejected('饮食日记已有这餐的实际记录，请保留已吃餐次。');
@@ -718,15 +841,11 @@ class PlannerRepository {
           'Only today or future unrecorded meals can be swapped',
         );
       }
-      final revisions = (s['plans'] as List)
-          .where(
-            (p) =>
-                date.compareTo(p['plan']['period_start']) >= 0 &&
-                date.compareTo(nextDay(p['plan']['period_start'], 6)) <= 0,
-          )
-          .toList();
-      if (revisions.isEmpty) throw const PlanRejected('Plan missing');
-      final updated = copyJson(Map<String, dynamic>.from(revisions.last));
+      final active = revisionForDate(date);
+      if (active == null || !revisionFullyActive(active)) {
+        throw const PlanRejected('这份餐单已被新版替代，请打开当前计划。');
+      }
+      final updated = copyJson(active);
       final day = (updated['plan']['days'] as List).firstWhere(
         (d) => d['date'] == date,
       );
@@ -736,14 +855,14 @@ class PlannerRepository {
         updated['plan'],
         updated['plan']['period_start'],
         preservedMeals: preservedPlanMeals(
-          Map<String, dynamic>.from(revisions.last['plan']),
+          Map<String, dynamic>.from(active['plan']),
           Map<String, dynamic>.from(s['records']),
           localDay(now()),
         ),
       );
-      updated['id'] =
-          "${updated['plan']['period_start']}-v${revisions.length + 1}";
-      updated['version'] = revisions.length + 1;
+      final version = _nextVersion(updated['plan']['period_start']);
+      updated['id'] = "${updated['plan']['period_start']}-v$version";
+      updated['version'] = version;
       updated['source'] = 'manual';
       updated['notice'] = 'local recipe swap';
       updated['reason'] = 'user requested $date/$slot swap';

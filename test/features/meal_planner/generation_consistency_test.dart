@@ -23,6 +23,7 @@ class DeferredService extends MealPlanningService {
   final started = Completer<void>();
   final finish = Completer<Json>();
   late Json answer;
+  late Json inputContext;
   DeferredService() : super(OfflineCredentials());
   @override
   Future<Json> generate(
@@ -32,6 +33,7 @@ class DeferredService extends MealPlanningService {
     bool mock = false,
     Map<String, Json> preservedMeals = const {},
   }) {
+    inputContext = input;
     answer = {
       'plan': rules.fallback(start),
       'source': 'mock',
@@ -115,6 +117,24 @@ void main() {
     await expectLater(request, throwsA(isA<PlanRejected>()));
     expect(repo.state['plans'].length, 1);
     expect((await repo.intakes.getAllIntakesDBO()).length, 8);
+  });
+  test('a meal recorded during policy rebuild rejects stale start and preserves diary', () async {
+    final today = localDay(DateTime.now());
+    final plan = (await repo.rules(planningStart: today)).fallback(today);
+    final saved = repo.state;
+    saved['plans'] = [{'id': 'legacy', 'version': 1, 'plan': plan}];
+    await db.plans.put('state', jsonEncode(saved));
+    final request = repo.generate(today, policyRefreshSourceId: 'legacy');
+    await service.started.future;
+    expect(service.inputContext['mode'], 'policy_refresh');
+    expect(service.inputContext['current_plan'], isNull);
+    expect(service.inputContext['execution_records'], isEmpty);
+    await repo.record(today, Map<String, dynamic>.from(plan['days'][0]['meals'][0]), 'completed');
+    service.finish.complete(service.answer);
+    await expectLater(request, throwsA(isA<PlanRejected>()));
+    expect(repo.state['plans'].length, 1);
+    expect(repo.state['records']['$today/breakfast']['status'], 'completed');
+    expect((await repo.intakes.getAllIntakesDBO()).length, 1);
   });
 
 }
