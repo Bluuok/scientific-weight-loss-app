@@ -149,6 +149,7 @@ class _PlannerPageState extends State<PlannerPage> {
         preservedTargetKcal: (previous?['target_kcal'] as num?)?.toDouble(),
         preservedMinimumKcal: (previous?['minimum_kcal'] as num?)?.toDouble(),
         preservedMaximumKcal: (previous?['maximum_kcal'] as num?)?.toDouble(),
+        resetAdaptation: policyRefreshSourceId != null,
       );
       if (repo.state['safety_ack_version'] != 'older-obesity-v3') {
         if (!await _confirm(t('safetyTitle'), t('safety'))) return;
