@@ -21,6 +21,7 @@ import '../domain/monthly_direction.dart';
 import '../domain/grocery_budget.dart';
 import '../domain/cycle_progress_review.dart';
 import '../domain/gradual_energy_policy.dart';
+import '../domain/meal_plan_policy_release.dart';
 import '../domain/weight_loss_eligibility.dart';
 import '../domain/medical_safety_screen.dart';
 import 'meal_planning_service.dart';
@@ -405,12 +406,50 @@ class PlannerRepository {
     };
   }
 
+  bool policyRefreshNeeded(Json revision) =>
+      MealPlanPolicyRelease.refreshNeeded(
+        revision,
+        List<Json>.from(state['plans']),
+      );
+
+  /// Keep anything already eaten today. The fresh seven-day plan can start
+  /// today only if there are no actual/explicit meal records for today.
+  Future<String> policyRefreshStart(Json source) async {
+    if (!policyRefreshNeeded(source)) {
+      throw const PlanRejected('该计划已使用新策略或已经重建，无须重复生成。');
+    }
+    final today = localDay(now());
+    if (!(source['plan']['days'] as List).any((d) => d['date'] == today)) {
+      throw const PlanRejected('只能从正在执行的旧计划升级未来餐次。');
+    }
+    var already = ['breakfast', 'lunch', 'dinner'].any((slot) {
+      final record = state['records']['$today/$slot'];
+      return record != null && record['status'] != 'pending';
+    });
+    for (final slot in ['breakfast', 'lunch', 'dinner']) {
+      if (await diarySlotRecorded(today, slot)) already = true;
+    }
+    return already ? nextDay(today, 1) : today;
+  }
+
   Future<Json> generate(
     String start, {
     Json? previous,
     bool mock = false,
     String reason = '',
+    String? policyRefreshSourceId,
   }) async {
+    if (policyRefreshSourceId != null) {
+      if (previous != null) {
+        throw const PlanRejected('策略升级和旧计划微调不能同时进行。');
+      }
+      final candidates = List<Json>.from(state['plans'])
+          .where((p) => p['id'] == policyRefreshSourceId).toList();
+      if (candidates.length != 1 ||
+          start != await policyRefreshStart(candidates.single)) {
+        throw const PlanRejected('旧计划或已记录餐次发生变化，请重新打开并升级。');
+      }
+    }
     final previousSlot = previous == null
         ? null
         : ((previous['plan']['days'][0]['meals'] as List).firstWhere(
@@ -462,9 +501,11 @@ class PlannerRepository {
       rule,
       start,
       {
-        'mode': previous == null
-            ? ((s['plans'] as List).isEmpty ? 'initial' : 'next_week')
-            : 'adjust_remaining',
+        'mode': policyRefreshSourceId != null
+            ? 'policy_refresh'
+            : previous == null
+                ? ((s['plans'] as List).isEmpty ? 'initial' : 'next_week')
+                : 'adjust_remaining',
         'profile': {
           'self_reported_risk_screen': enforceMedicalScreen
               ? 'no_reported_risk_flags_not_medical_clearance'
@@ -494,13 +535,20 @@ class PlannerRepository {
           ...Map<String, dynamic>.from(s['preferences']),
           'simple_slot': rule.simpleSlot,
         },
-        'history_summary': await history(
-          previous == null ? start : nextDay(localDay(now()), 1),
-        ),
-        'current_plan': previous?['plan'],
+        // A policy refresh starts a genuinely new menu: no old recipe text,
+        // no reuse of earlier AI suggestions. Actual eaten data remains local.
+        'history_summary': policyRefreshSourceId == null
+            ? await history(
+                previous == null ? start : nextDay(localDay(now()), 1))
+            : <String, dynamic>{
+                'policy_refresh': 'do_not_copy_old_menus',
+                'previous_intake_not_sent': true,
+              },
+        'current_plan': policyRefreshSourceId != null ? null : previous?['plan'],
         'execution_records': {
           for (final e in (s['records'] as Map).entries)
-            if ((e.key as String).compareTo(nextDay(start, -14)) >= 0 &&
+            if (policyRefreshSourceId == null &&
+                (e.key as String).compareTo(nextDay(start, -14)) >= 0 &&
                 (e.key as String)
                         .substring(0, 10)
                         .compareTo(nextDay(start, 6)) <=
@@ -552,10 +600,26 @@ class PlannerRepository {
       final existing = plans
           .where((p) => p['plan']['period_start'] == start)
           .toList();
-      if (previous == null && existing.isNotEmpty) {
+      if (policyRefreshSourceId != null) {
+        final sources = plans.where((p) => p['id'] == policyRefreshSourceId)
+            .toList();
+        if (sources.length != 1 ||
+            !MealPlanPolicyRelease.refreshNeeded(
+                Map<String, dynamic>.from(sources.single),
+                List<Json>.from(plans))) {
+          throw const PlanRejected('该旧计划已升级，请勿重复提交。');
+        }
+        if (start != await policyRefreshStart(
+            Map<String, dynamic>.from(sources.single))) {
+          throw const PlanRejected('新记录改变了升级起始日期，请重新生成以保护已吃餐次。');
+        }
+      }
+      if (policyRefreshSourceId == null &&
+          previous == null && existing.isNotEmpty) {
         throw const PlanRejected('This week already exists');
       }
-      if (previous == null &&
+      if (policyRefreshSourceId == null &&
+          previous == null &&
           plans.any(
             (p) =>
                 start.compareTo(nextDay(p['plan']['period_start'], 6)) <= 0 &&
@@ -604,6 +668,9 @@ class PlannerRepository {
         'version': existing.length + 1,
         'created_at': now().toIso8601String(),
         'validation_version': PlanRules.version,
+        'planning_policy_version': MealPlanPolicyRelease.current,
+        if (policyRefreshSourceId != null)
+          'policy_refresh_source_id': policyRefreshSourceId,
         'reason': reason,
         'preferences': latest['preferences'],
         'monthly_direction': await monthlyDirection(start, planRules: rule),
