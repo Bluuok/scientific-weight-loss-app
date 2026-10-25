@@ -500,6 +500,23 @@ class _PlannerPageState extends State<PlannerPage> {
                   ),
                 ),
               ),
+            if (_profileIssue == null && todayPlan != null &&
+                !repo.policyRefreshNeeded(todayPlan) &&
+                revisions.any((p) =>
+                    p['policy_refresh_source_id'] == todayPlan['id'] &&
+                    (p['plan']['period_start'] as String).compareTo(today) > 0))
+              Card(
+                color: PlannerVisual.info,
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Text(
+                    '新版七天菜单已安排好，将从明天开始。今天旧菜谱仅供核对，'
+                    '请如实记录已经吃过的食物，不需要按旧版强迫自己挨饿。',
+                    style: Theme.of(context).textTheme.bodyLarge
+                        ?.copyWith(color: PlannerVisual.infoInk),
+                  ),
+                ),
+              ),
             if (_profileIssue == null && todayMeal != null)
               Card(
                 color: Colors.white,
