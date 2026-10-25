@@ -170,6 +170,8 @@ void main() {
       policyRefreshSourceId: legacy['id'],
     );
     expect(refreshed['policy_refresh_source_id'], legacy['id']);
+    expect(refreshed['gradual_energy_stage']['level'], 1);
+    expect(repo.gradualStage(nextDay(today, 7))['week'], 2);
     expect(repo.state['plans'].length, 2);
     expect(repo.state['plans'][0]['plan'], previousPlan);
     expect(repo.policyRefreshNeeded(legacy), false);
