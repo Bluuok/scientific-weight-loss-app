@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:opennutritracker/features/meal_planner/domain/planner.dart';
 import 'package:opennutritracker/features/meal_planner/domain/planning_prompt.dart';
+import 'package:opennutritracker/features/meal_planner/domain/planning_task_prompts.dart';
 import 'package:opennutritracker/features/meal_planner/data/meal_planning_service.dart';
 import 'package:opennutritracker/features/add_meal/data/model_meal_text_interpreter.dart';
 import 'package:opennutritracker/features/add_meal/data/model_meal_photo_interpreter.dart';
@@ -44,7 +45,7 @@ void main() {
         minimumProtein: 80,
       );
       final sent = <Json>[];
-      for (final mode in ['initial', 'adjust_remaining', 'next_week']) {
+      for (final mode in ['initial', 'adjust_remaining', 'next_week', 'policy_refresh']) {
         var calls = 0;
         final date = mode == 'next_week' ? '2026-10-23' : '2026-10-16';
         final service = MealPlanningService(
@@ -78,19 +79,36 @@ void main() {
         });
         expect(result['source'], 'ai');
       }
-      expect(sent.length, 4);
+      expect(sent.length, 5);
+      final distinctModes = <String, String>{};
       for (final request in sent) {
         final messages = request['messages'] as List;
+        final context = jsonDecode(messages[1]['content']);
+        final mode = context['mode'] as String;
         expect(messages.first, {
           'role': 'system',
-          'content': mealPlannerSystemPrompt,
+          'content': planningSystemPromptForMode(mode),
         });
-        final context = jsonDecode(messages[1]['content']);
+        final composed = messages.first['content'] as String;
+        expect(composed, contains('老年男性的规划重点'));
+        expect(composed, contains('严格输出契约'));
+        if (mode == 'policy_refresh') {
+          expect(composed, contains('不作为参考'));
+          expect(composed, isNot(contains('查看 history_summary')));
+        }
+        distinctModes[mode] = composed;
+        if (messages.length > 2) {
+          expect(messages.last['content'], contains('本地验证失败'));
+          expect(messages.last['content'], contains('完整7天JSON'));
+        }
         expect(context['monthly_direction']['phase'], 1);
         expect(context['history_summary']['known_recent_proteins'], [
           'chicken',
         ]);
       }
+      expect(distinctModes.length, 4);
+      expect(distinctModes.values.toSet().length, 4,
+          reason: 'Initial, next, adjust and policy reset cannot share one task prompt');
     },
   );
   test(
