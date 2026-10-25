@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:opennutritracker/core/utils/secure_app_storage_provider.dart';
 import '../domain/planner.dart';
-import '../domain/planning_prompt.dart';
+import '../domain/planning_task_prompts.dart';
 
 class PlanningCredentials {
   static const prefix = 'meal-planner-v1-';
@@ -180,8 +180,11 @@ class MealPlanningService {
       'period_start': start,
       'days': [template['days'][0]],
     };
+    final mode = input['mode'] is String
+        ? input['mode'] as String : 'initial';
+    final systemPrompt = planningSystemPromptForMode(mode);
     final messages = <Json>[
-      {'role': 'system', 'content': mealPlannerSystemPrompt},
+      {'role': 'system', 'content': systemPrompt},
       {
         'role': 'user',
         'content': jsonEncode({
@@ -244,7 +247,7 @@ class MealPlanningService {
       messages.add({
         'role': 'user',
         'content':
-            'Previous response rejected: $failure. Return repaired full JSON.',
+            planningRepairPrompt(failure),
       });
     }
     if (_cancelled) throw const PlanRejected('Cancelled');
