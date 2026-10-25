@@ -154,6 +154,63 @@ void main() {
     );
   });
 
+  test('old diet strategy refresh replaces only future menu, not historical diary',
+      () async {
+    final today = localDay(DateTime.now());
+    final original = await repo.generate(today);
+    final previousPlan = copyJson(original['plan']);
+    final saved = repo.state;
+    (saved['plans'] as List).first.remove('planning_policy_version');
+    await db.plans.put('state', jsonEncode(saved));
+    final legacy = Map<String, dynamic>.from(repo.state['plans'][0]);
+    expect(repo.policyRefreshNeeded(legacy), true);
+    expect(await repo.policyRefreshStart(legacy), today);
+    final refreshed = await repo.generate(
+      today,
+      policyRefreshSourceId: legacy['id'],
+    );
+    expect(refreshed['policy_refresh_source_id'], legacy['id']);
+    expect(repo.state['plans'].length, 2);
+    expect(repo.state['plans'][0]['plan'], previousPlan);
+    expect(repo.policyRefreshNeeded(legacy), false);
+    await expectLater(
+      repo.generate(today, policyRefreshSourceId: legacy['id']),
+      throwsA(isA<PlanRejected>()),
+    );
+    await Hive.close();
+    await open();
+    expect(repo.state['plans'].length, 2);
+    expect(repo.state['plans'].last['id'], refreshed['id']);
+  });
+
+  test('an already eaten meal forces refreshed seven-day menu to start tomorrow',
+      () async {
+    final today = localDay(DateTime.now());
+    final original = await repo.generate(today);
+    final meal = Map<String, dynamic>.from(
+      original['plan']['days'][0]['meals'][0],
+    );
+    await repo.record(today, meal, 'completed');
+    final before = await intake.getAllIntakesDBO();
+    final saved = repo.state;
+    (saved['plans'] as List).first.remove('planning_policy_version');
+    await db.plans.put('state', jsonEncode(saved));
+    final source = Map<String, dynamic>.from(repo.state['plans'].first);
+    final tomorrow = nextDay(today, 1);
+    expect(await repo.policyRefreshStart(source), tomorrow);
+    final replacement = await repo.generate(
+      tomorrow,
+      policyRefreshSourceId: source['id'],
+    );
+    expect(replacement['plan']['period_start'], tomorrow);
+    expect(repo.state['records']['$today/breakfast']['status'], 'completed');
+    expect((await intake.getAllIntakesDBO()).length, before.length);
+    expect(repo.state['plans'][0]['plan'], original['plan']);
+    expect(repo.policyRefreshNeeded(source), false);
+    expect((await repo.rulesForDate(tomorrow)).targetKcal,
+      closeTo(replacement['target_kcal'], 0.01));
+  });
+
   test('local price entries persist across encrypted Hive restart', () async {
     final today = localDay(DateTime.now());
     final revision = await repo.generate(today);
