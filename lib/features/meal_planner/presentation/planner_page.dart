@@ -134,7 +134,11 @@ class _PlannerPageState extends State<PlannerPage> {
     if (mounted) setState(() {});
   }
 
-  Future<void> _generate(String start, {Json? previous}) async {
+  Future<void> _generate(
+    String start, {
+    Json? previous,
+    String? policyRefreshSourceId,
+  }) async {
     try {
       if (repo.enforceMedicalScreen && repo.medicalSafetyIssue != null) {
         await _openMedicalSafety();
@@ -153,7 +157,10 @@ class _PlannerPageState extends State<PlannerPage> {
       if (!await _confirm(
         t('reference'),
         '每天计划约 ${rules.targetKcal.round()} 千卡（食物提供的能量），\n蛋白质不少于 ${rules.minimumProtein.round()} 克（帮助维护肌肉）\n'
-        '${t('limits')}\n${previous == null ? t('generateNote') : t('adjustNote')}',
+        '${t('limits')}\n'
+        '${policyRefreshSourceId != null
+            ? '将重新安排未来7天，不沿用旧菜谱。已有饮食记录和体重记录会保留。'
+            : previous == null ? t('generateNote') : t('adjustNote')}',
       )) {
         return;
       }
@@ -172,7 +179,10 @@ class _PlannerPageState extends State<PlannerPage> {
         final revision = await repo.generate(
           start,
           previous: previous,
-          reason: previous == null
+          policyRefreshSourceId: policyRefreshSourceId,
+          reason: policyRefreshSourceId != null
+              ? 'rebuild using updated nutrition policy'
+              : previous == null
               ? 'user requested week'
               : 'user requested remaining meals',
         );
@@ -434,6 +444,56 @@ class _PlannerPageState extends State<PlannerPage> {
                           'medical-risk-check', '开始健康核对',
                           busy ? null : _openMedicalSafety,
                         ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            if (_profileIssue == null && todayPlan != null &&
+                repo.policyRefreshNeeded(todayPlan))
+              Card(
+                color: PlannerVisual.caution,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        '饮食方案已升级',
+                        style: Theme.of(context).textTheme.titleLarge
+                            ?.copyWith(color: PlannerVisual.cautionInk),
+                      ),
+                      const SizedBox(height: 7),
+                      Text(
+                        '这份菜谱来自旧策略。新版更注重开始吃得饱、逐周调整。'
+                        '重新生成只影响还没吃的日子；已吃记录、体重和回顾都保留。',
+                        style: Theme.of(context).textTheme.bodyLarge
+                            ?.copyWith(color: PlannerVisual.cautionInk),
+                      ),
+                      const SizedBox(height: 12),
+                      plannerButton(
+                        'refresh-meal-policy',
+                        busy ? '正在生成新菜谱…' : '重新安排新版菜谱',
+                        busy ? null : () async {
+                          try {
+                            final date = await repo.policyRefreshStart(todayPlan);
+                            if (!mounted) return;
+                            await _generate(
+                              date,
+                              policyRefreshSourceId: todayPlan['id'] as String,
+                            );
+                          } catch (e) {
+                            if (mounted) {
+                              setState(() => error = plannerErrorText(e));
+                            }
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        '升级由你确认后执行，不会偷偷覆盖已经吃过的食物。',
+                        style: Theme.of(context).textTheme.bodySmall
+                            ?.copyWith(color: PlannerVisual.cautionInk),
                       ),
                     ],
                   ),
