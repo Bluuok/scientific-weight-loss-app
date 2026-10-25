@@ -114,8 +114,17 @@ class PlannerRepository {
     final existing = (snapshot['plans'] as List)
         .map((row) => row['plan']['period_start'] as String)
         .toList()..sort();
-    final first = existing.isEmpty || start.compareTo(existing.first) < 0
-        ? start : existing.first;
+    final resets = (snapshot['plans'] as List)
+        .where((row) => row['policy_refresh_source_id'] != null &&
+            (row['plan']['period_start'] as String).compareTo(start) <= 0)
+        .map((row) => row['plan']['period_start'] as String)
+        .toList()..sort();
+    // After a major policy reset, prior tolerance must NOT unlock a more
+    // restrictive first week. Begin a new adaptation window.
+    final first = resets.isNotEmpty
+        ? resets.last
+        : existing.isEmpty || start.compareTo(existing.first) < 0
+            ? start : existing.first;
     return GradualEnergyPolicy.stage(
       programStart: first,
       weekStart: start,
@@ -182,6 +191,7 @@ class PlannerRepository {
     double? preservedTargetKcal,
     double? preservedMinimumKcal,
     double? preservedMaximumKcal,
+    bool resetAdaptation = false,
   }) async {
     if (enforceMedicalScreen) {
       final issue = medicalSafetyIssue;
@@ -191,7 +201,11 @@ class PlannerRepository {
     final issue = weightLossIssue(user);
     if (issue != null) throw PlanRejected(issue);
     final maintenance = TDEECalc.getTDEEKcalIOM2005(user);
-    final phase = gradualStage(planningStart ?? localDay(now()));
+    final stageStart = planningStart ?? localDay(now());
+    final phase = resetAdaptation
+        ? GradualEnergyPolicy.stage(
+            programStart: stageStart, weekStart: stageStart, reports: {})
+        : gradualStage(stageStart);
     final legacyContract = preservedTargetKcal != null &&
         preservedMinimumKcal == null && preservedMaximumKcal == null;
     final target = preservedTargetKcal ??
@@ -462,6 +476,7 @@ class PlannerRepository {
       preservedTargetKcal: (previous?['target_kcal'] as num?)?.toDouble(),
       preservedMinimumKcal: (previous?['minimum_kcal'] as num?)?.toDouble(),
       preservedMaximumKcal: (previous?['maximum_kcal'] as num?)?.toDouble(),
+      resetAdaptation: policyRefreshSourceId != null,
     );
     final user = await users.getUserData();
     final s = state;
@@ -469,7 +484,10 @@ class PlannerRepository {
     final preferencesStamp = jsonEncode(s['preferences']);
     final satietyStamp = jsonEncode(s['satiety_reports']);
     final stageStamp = jsonEncode(gradualStage(start));
-    final energyStage = previous == null ? gradualStage(start) :
+    final energyStage = policyRefreshSourceId != null
+        ? GradualEnergyPolicy.stage(
+            programStart: start, weekStart: start, reports: {})
+        : previous == null ? gradualStage(start) :
         previous['gradual_energy_stage'] ?? <String, dynamic>{
           'version': 'legacy-saved-target',
           'explanation': '沿用已保存计划的能量目标，不自动改写历史安排。',
